@@ -1,6 +1,6 @@
 from falcon_core.routes import route
-from .resources import UsersManage
+from .resources import UsersResource
 
 routes = [
-    route('/', UsersManage()),
+    route('/', UsersResource()),
 ]
