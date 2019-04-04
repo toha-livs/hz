@@ -1,6 +1,7 @@
-from falcon_core.routes import route
-from .resources import GroupsResource
+from falcon_core.routes import route, include
 
 routes = [
-    route('/', GroupsResource())
+    route('/users/', include("auth.user.routes")),
+    route('/groups/', include("auth.group.routes")),
+
 ]
