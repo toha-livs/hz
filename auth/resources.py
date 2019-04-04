@@ -11,4 +11,5 @@ class GroupsResource(Resource):
             req.media = result
             req.status = falcon.HTTP_200
         except Exception as e:
+            print(e)
             req.status = falcon.HTTP_404
