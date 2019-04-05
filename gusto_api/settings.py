@@ -9,8 +9,8 @@ DEBUG = True
 ALLOWED_HOSTS = ['localhost']
 
 MIDDLEWARE = [
-    # 'auth.middleware.CORSMiddleware',
-    # 'auth.middleware.AuthMiddleware',
+    'auth.middleware.CORSMiddleware',
+    'auth.middleware.AuthMiddleware',
 ]
 INSTALLED_APPS = [
     'falcon_core',
