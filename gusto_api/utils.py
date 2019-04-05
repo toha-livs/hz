@@ -2,6 +2,8 @@ import hashlib
 import os
 from importlib import import_module
 
+os.environ.setdefault('FALCON_SETTINGS_MODULE', 'gusto_api.settings')
+
 
 def encrypt(text: str) -> str:
     """

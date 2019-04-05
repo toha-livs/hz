@@ -4,8 +4,11 @@ import datetime
 os.environ.setdefault('FALCON_SETTINGS_MODULE', 'gusto_api.settings')
 
 from gusto_api.utils import encrypt
-from gusto_api.models import *
-from auth.utils import *
+from gusto_api.models import (
+    Users, Groups, Permissions,
+    UsersTokens, Projects, LanguageTemplate
+)
+from auth.utils import generate_users_tokens_by_group
 
 
 def fill_db():
@@ -37,7 +40,6 @@ def fill_db():
                      )
         user.save()
         users.append(user)
-
     permissions = []
     counter = 0
     for i in range(permissions_amount):

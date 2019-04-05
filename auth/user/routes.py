@@ -1,3 +1,6 @@
 from falcon_core.routes import route
+from .resources import LoginResource
 
-routes = []
+routes = [
+    route('/login/', LoginResource())
+]

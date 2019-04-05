@@ -1,7 +1,10 @@
-from falcon_core.resources import Resource
-import falcon
-from gusto_api.models import Groups
 import json
+
+import falcon
+from falcon_core.resources import Resource
+
+from gusto_api.models import Groups
+
 
 class GroupsResource(Resource):
 
@@ -18,7 +21,7 @@ class GroupsResource(Resource):
         query_list = Groups.objects.filter(**req.params).order_by(sort)
 
         if limit:
-            query_list = query_list[off_set:off_set+limit]
+            query_list = query_list[off_set:off_set + limit]
         try:
             for i in query_list:
                 print(i.name)
