@@ -7,6 +7,8 @@ from falcon_core.utils import encrypt_sha256_with_secret_key
 
 from auth.resources import Resource
 from gusto_api.models import Users, UsersTokens
+from gusto_api.utils import encrypt
+from auth.utils import generate_user_token
 
 
 def filter_data(data):
@@ -109,7 +111,7 @@ class LoginResource(Resource):
             resp.status = falcon.HTTP_400
             return
 
-        user.update(last_login=datetime.now())
+        user.update(last_login=datetime.datetime.now())
 
         token = UsersTokens.objects.filter(user=user).first()
 
