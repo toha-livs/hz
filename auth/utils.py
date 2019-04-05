@@ -174,6 +174,19 @@ def delete_request_util(model, pk: str, response: falcon.Response) -> None:
     model_instance.delete()
 
 
+def list_obj_to_serialize_format(list_obj: list, recurs=None):
+    response_list = []
+    for obj in list_obj:
+        var_dict = obj.to_dict(table_name=True)
+        if recurs:
+            if var_dict.get('table_name') == 'users':
+                var_dict['groups'] = list_obj_to_serialize_format(obj.groups())
+        var_dict.pop('table_name', None)
+        response_list.append(var_dict)
+
+    return response_list
+
+
 def get_serialize_object_to_dict_2(var_obj: MODELS_UNION) -> dict:
     """
     function get object of class <Users>, filtering datetime and reserved property,

@@ -2,13 +2,12 @@ import datetime
 import json
 
 import falcon
-from .utils import list_obj_to_serialize_format
 from falcon_core.utils import encrypt_sha256_with_secret_key
 
 from auth.resources import Resource
 from gusto_api.models import Users, UsersTokens
 from gusto_api.utils import encrypt
-from auth.utils import generate_user_token
+from auth.utils import generate_user_token, list_obj_to_serialize_format
 
 
 def filter_data(data):
