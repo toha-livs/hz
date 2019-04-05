@@ -1,5 +1,5 @@
 from mongoengine import *
-
+from datetime import datetime, timedelta, time
 connect('tests')
 
 
@@ -116,8 +116,16 @@ class Users(Document):
     def filter_groups(**kwargs):
         return Groups.objects.filter(**kwargs).all()
 
+    def to_dict(self, table_name=None):
+        response = dict(id=str(self.id), name=self.name, email=self.email, last_login=datetime.timestamp(self.last_login),
+                    date_created=datetime.timestamp(datetime.combine(self.date_created, time.min)),
+                    is_active=self.is_active, image=self.image, tel=self.tel)
+        if table_name:
+            response.update({'table_name': 'users'})
+        return response
+
     def group_values(self, col_name):
-        return Groups.objects(col_name)
+        return self.groups.values_list(col_name)
 
     def __str__(self):
         return f"<Users id={self.id}, email={self.email}, tel={self.tel}>"
@@ -153,6 +161,14 @@ class Groups(Document):
 
     def __str__(self):
         return f"<Group id={self.id}, users={self.users}, project={self.project}>"
+
+    def to_dict(self, table_name=None):
+        response = dict(id=str(self.id), name=self.name, users=self.users,
+                        project=self.project.id, permissions=[perm.get_access() for perm in self.permissions],
+                        g_type=self.g_type, is_owner=self.is_owner)
+        if table_name:
+            response.update({'table_name': 'groups'})
+        return response
 
 
 class UsersTokens(Document):
