@@ -1,3 +1,7 @@
 from falcon_core.routes import route
+from .resources import UsersResource, UserResource
 
-routes = []
+routes = [
+    route('/', UsersResource()),
+    route('/{user_id}/', UserResource()),
+]

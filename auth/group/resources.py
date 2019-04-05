@@ -1,4 +1,4 @@
-from falcon_core.resources import Resource
+from auth.resources import Resource
 import falcon
 from gusto_api.models import Groups, Projects, Users, Permissions
 import json
@@ -44,8 +44,10 @@ def filter_data(data):
 
 
 class GroupsResource(Resource):
+    use_token = True
 
     def on_get(self, req, resp, **kwargs):
+        print(kwargs)
         fields = filter_data(req.params)
         sort = fields.pop('sort', 'id')
         if sort not in Groups.fields:
@@ -77,6 +79,7 @@ class GroupsResource(Resource):
 
 
 class GroupResource(Resource):
+    use_token = True
 
     def on_get(self, req, resp, **kwargs):
         try:
