@@ -2,104 +2,90 @@ import datetime
 import json
 
 import falcon
-from .utils import  list_obj_to_serialize_format
-from falcon_core.utils import encrypt_sha256_with_secret_key
 
 from auth.resources import Resource
 from gusto_api.models import Users, UsersTokens
-
-
-def generate_user_token(user_obj: Users) -> None:
-    """
-    Read docstring for generate_users_tokens_by_group_id
-    :param user_obj:
-    :return:
-    """
-    user_groups = user_obj.group_values('permissions')
-    text = user_obj.email + user_obj.tel + user_obj.password + str(user_groups)
-    user_token = user_obj.get_token
-    if user_token is None:
-        user_token = UsersTokens(user=user_obj, token=encrypt_sha256_with_secret_key(text))
-    else:
-        user_token.token = encrypt_sha256_with_secret_key(text)
-    user_token.save()
-
-def filter_data(data):
-    new_data = {}
-    for key, value in data.items():
-        if value == 'true':
-            new_data[key] = True
-        elif value == 'false':
-            new_data[key] = False
-        else:
-            new_data[key] = value
-    return new_data
+from gusto_api.utils import encrypt
+from auth.utils import generate_user_token, get_request_multiple, delete_request, get_request_single
 
 
 class UsersResource(Resource):
     use_token = True
 
-    def on_get(self, request, response, **kwargs):
-        fields = filter_data(request.params)
-        sort = fields.pop('sort', 'id')
-        if sort not in Users.fields:
-            sort = 'id'
-        off_set = int(fields.pop('offset', 0))
-        limit = int(fields.pop('limit', 0))
-        users = Users.objects.filter(**fields).order_by(sort)
-        if limit:
-            users = users[off_set:off_set + limit]
-        response_list = list_obj_to_serialize_format(users, recurs=True)
-        response.media = response_list
-        response.status = falcon.HTTP_200
+    def on_get(self, req, resp, **kwargs):
+        get_request_multiple(Users, req.params, resp)
 
-    def on_post(self, request, response, **kwargs):
-        data = json.load(request.stream)
+    def on_post(self, req, resp, **kwargs):
+        data = json.load(req.stream)
         user = Users(**data)
         user.last_login = datetime.datetime.now()
         user.date_created = datetime.datetime.now()
         user.is_active = True
-        user.password = encrypt_sha256_with_secret_key(user.email + user.tel + user.password)
+        user.password = encrypt(user.email + user.tel + user.password)
         user.save()
         generate_user_token(user)
-        print(dir(user), 'user_dir')
-        response.body = user.to_json()
-        response.status = falcon.HTTP_201
+        resp.body = user.to_json()
+        resp.status = falcon.HTTP_201
 
 
 class UserResource(Resource):
     use_token = True
 
-    def on_get(self, request, response, **kwargs):
-        user = Users.objects.filter(id=kwargs.get('user_id'))
-        if not user:
-            response.status = falcon.HTTP_404
-            return
-        response.media = user[0].to_dict()
-        response.status = falcon.HTTP_200
+    def on_get(self, req, resp, **kwargs):
+        get_request_single(Users, resp, **kwargs)
 
-    def on_put(self, request, response, **kwargs):
-        user = Users.objects.filter(id=kwargs.get('user_id'))
+    def on_put(self, req, resp, **kwargs):
+        user = Users.objects.filter(id=kwargs.get('id'))
         if not user:
-            response.status = falcon.HTTP_404
+            resp.status = falcon.HTTP_404
             return
         user = user[0]
-        data = json.load(request.stream)
+        data = json.load(req.stream)
         if data.get('password'):
-            response.status = falcon.HTTP_400('password is not changeable')
+            resp.status = falcon.HTTP_400('password is not changeable')
             return
         for key, value in data.items():
             setattr(user, key, value)
         user.save()
         generate_user_token(user)
-        response.status = falcon.HTTP_200
+        resp.status = falcon.HTTP_200
 
-    def on_delete(self, request, response, **kwargs):
-        user = Users.objects.filter(id=kwargs.get('user_id'))
-        if not user:
-            response.status = falcon.HTTP_404
+    def on_delete(self, req, resp, **kwargs):
+        delete_request(Users, resp, **kwargs)
+
+
+class LoginResource(Resource):
+    def on_post(self, req, resp, **kwargs):
+        try:
+            data = json.load(req.stream)
+        except json.JSONDecodeError:
+            resp.status = falcon.HTTP_400
             return
-        user[0].delete()
-        response.status = falcon.HTTP_204
-#
-#
+
+        if '@' in data.get('login'):
+            user = Users.objects.filter(email=data.get('login')).first()
+        else:
+            user = Users.objects.filter(tel=data.get('login')).first()
+
+        if user is None:
+            resp.status = falcon.HTTP_400
+            return
+
+        if user.password != encrypt(''.join((user.email, user.tel, data.get('password')))):
+            resp.status = falcon.HTTP_400
+            return
+
+        user.update(last_login=datetime.datetime.now())
+
+        token = UsersTokens.objects.filter(user=user).first()
+
+        if token is None:
+            resp.status = falcon.HTTP_400
+            return
+
+        # TODO: use Anton's to_dict instead
+        user = json.loads(user.to_json())
+        user['token'] = token.token
+
+        resp.media = user
+        resp.status = falcon.HTTP_200

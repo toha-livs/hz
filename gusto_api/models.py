@@ -1,6 +1,7 @@
 from mongoengine import *
-from datetime import datetime, timedelta, time
-connect('tests1')
+from datetime import datetime, time
+
+connect('tests')
 
 
 class LanguageTemplate(EmbeddedDocument):
@@ -99,7 +100,7 @@ class Users(Document):
     email = EmailField()
     password = StringField()
     last_login = DateTimeField()
-    date_created = DateField()
+    date_created = DateTimeField()
     is_active = BooleanField()
     image = StringField()
     tel = StringField(max_length=24)
@@ -117,9 +118,10 @@ class Users(Document):
         return Groups.objects.filter(**kwargs).all()
 
     def to_dict(self, table_name=None):
-        response = dict(id=str(self.id), name=self.name, email=self.email, last_login=datetime.timestamp(self.last_login),
-                    date_created=datetime.timestamp(datetime.combine(self.date_created, time.min)),
-                    is_active=self.is_active, image=self.image, tel=self.tel)
+        response = dict(id=str(self.id), name=self.name, email=self.email,
+                        last_login=datetime.timestamp(self.last_login),
+                        date_created=datetime.timestamp(datetime.combine(self.date_created, time.min)),
+                        is_active=self.is_active, image=self.image, tel=self.tel)
         if table_name:
             response.update({'table_name': 'users'})
         return response
@@ -163,8 +165,8 @@ class Groups(Document):
         return f"<Group id={self.id}, users={self.users}, project={self.project}>"
 
     def to_dict(self, table_name=None):
-        response = dict(id=str(self.id), name=self.name, users=self.users,
-                        project=self.project.id, permissions=[perm.get_access() for perm in self.permissions],
+        response = dict(id=str(self.id), name=self.name,
+                        project=str(self.project.id), permissions=[perm.get_access for perm in self.permissions],
                         g_type=self.g_type, is_owner=self.is_owner)
         if table_name:
             response.update({'table_name': 'groups'})

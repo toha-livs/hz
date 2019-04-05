@@ -5,7 +5,6 @@ from gusto_api.models import UsersTokens
 
 cors = CORS(allow_origins_list=['*'], allow_all_origins=True, allow_all_headers=True, allow_all_methods=True)
 
-
 CORSMiddleware = cors.middleware
 
 
@@ -14,9 +13,10 @@ class BaseMiddleware:
         return (req.get_header('ACCESS-CONTROL-REQUEST-METHOD')
                 and req.get_header('ACCESS-CONTROL-REQUEST-HEADERS'))
 
-    def verify_token(self, instance):
+    @staticmethod
+    def verify_token(instance):
         token = UsersTokens.objects.filter(token=instance.token).first()
-        return True if bool(token) else False
+        return bool(token)
 
 
 class AuthMiddleware(BaseMiddleware):
