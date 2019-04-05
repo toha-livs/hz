@@ -110,12 +110,3 @@ def update_user_tokens():
 
 if __name__ == '__main__':
     fill_db()
-
-    # p=Projects.objects.first()
-    # print(p)
-    # print(p.groups)
-
-    u = Users.objects[len(Users.objects.all()) - 1]
-    print(u.groups)
-    print(u.filter_groups(is_owner=False))
-    # print(u.group_values('is_owner'))

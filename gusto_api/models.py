@@ -1,7 +1,7 @@
 from mongoengine import *
-from datetime import datetime, timedelta, time
+from datetime import datetime, time
 
-connect('gusto_api')
+connect('tests')
 
 
 class LanguageTemplate(EmbeddedDocument):
