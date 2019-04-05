@@ -1,8 +1,13 @@
-import hashlib
 import os
+import hashlib
 from importlib import import_module
 
 os.environ.setdefault('FALCON_SETTINGS_MODULE', 'gusto_api.settings')
+
+
+def import_object(module, default=None):
+    module = module.split('.')
+    return getattr(import_module('.'.join(module[:-1])), module[-1], default)
 
 
 def encrypt(text: str) -> str:
