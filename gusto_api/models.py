@@ -1,5 +1,5 @@
 from mongoengine import *
-
+from datetime import datetime, timedelta, time
 connect('tests1')
 
 
@@ -116,8 +116,13 @@ class Users(Document):
     def filter_groups(**kwargs):
         return Groups.objects.filter(**kwargs).all()
 
+    def to_dict(self):
+        return dict(id=str(self.id), name=self.name, email=self.email, last_login=datetime.timestamp(self.last_login),
+                    date_created=datetime.timestamp(datetime.combine(self.date_created, time.min)),
+                    is_active=self.is_active, image=self.image, tel=self.tel)
+
     def group_values(self, col_name):
-        return Groups.objects(col_name)
+        return self.groups.values_list(col_name)
 
     def __str__(self):
         return f"<Users id={self.id}, email={self.email}, tel={self.tel}>"
