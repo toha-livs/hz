@@ -147,6 +147,7 @@ class Groups(Document):
     g_type = StringField()
     is_owner = BooleanField()
 
+
     @staticmethod
     def filter_users(**kwargs):
         return Users.objects.filter(**kwargs).all()
