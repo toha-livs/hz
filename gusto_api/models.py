@@ -124,7 +124,7 @@ class Users(Document):
             response.update({'table_name': 'users'})
         return response
 
-    def group_values(self, col_name):
+    def groups_values(self, col_name):
         return self.groups.values_list(col_name)
 
     def __str__(self):
