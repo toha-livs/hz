@@ -62,6 +62,7 @@ def post_create_user(data: str, response: falcon.Response) -> None:
         return
 
     same_user = Users.objects(Users.email.like(data.get('email'))) | (Users.tel.like(data.get('tel'))).first()
+    # same_user = Users.objects(Users.email(data.get('email'))) | (Users.tel(data.get('tel'))).first()
 
     if same_user:
         if same_user.email == data.get('email'):
@@ -295,7 +296,7 @@ def groups_with_info_users(session, groups=None) -> Union[list, None]:
 
     try:
         if groups is None:
-            groups = session.query(Groups).all()
+            groups = Groups.objects.all()
         get_data = []
         for group in groups:
             group_column_filtered = del_privat_method(group)

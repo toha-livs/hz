@@ -1,6 +1,6 @@
 from mongoengine import *
 
-connect('tests')
+connect('gusto_api')
 
 
 class LanguageTemplate(EmbeddedDocument):
