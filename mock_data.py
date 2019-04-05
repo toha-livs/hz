@@ -1,22 +1,11 @@
 import os
 import datetime
-import hashlib
 
 os.environ.setdefault('FALCON_SETTINGS_MODULE', 'gusto_api.settings')
 
-from importlib import import_module
-
+from gusto_api.utils import encrypt
 from gusto_api.models import *
-
-
-def encrypt(text: str) -> str:
-    """
-    Encrypt given text string using sha256
-    :param text: string for encryption
-    :return: encrypted string
-    """
-    secret_key = import_module(os.environ.get('FALCON_SETTINGS_MODULE')).SECRET_KEY
-    return hashlib.sha256(str(text + secret_key).encode()).hexdigest()
+from auth.utils import *
 
 
 def fill_db():
@@ -109,9 +98,16 @@ def fill_db():
         token.save()
         tokens.append(token)
 
+    update_user_tokens()
+
+
+def update_user_tokens():
+    for index, group in enumerate(Groups.objects.all()):
+        generate_users_tokens_by_group(group)
+
 
 if __name__ == '__main__':
-    # fill_db()
+    fill_db()
 
     # p=Projects.objects.first()
     # print(p)
