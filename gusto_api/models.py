@@ -103,7 +103,6 @@ class GroupsTemplates(Document):
 
 class Users(Document):
     fields = {'name': str,
-              'login': str,
               'email': str,
               'password': str,
               'last_login': int,
@@ -189,7 +188,8 @@ class Groups(Document):
 
     def to_dict(self, table_name=False):
         response = dict(id=str(self.id), name=self.name,
-                        project=str(self.project.id), permissions=[perm.get_access for perm in self.permissions],
+                        project=str(self.project.id) if self.project else None,
+                        permissions=[perm.get_access for perm in self.permissions],
                         g_type=self.g_type, is_owner=self.is_owner)
         if table_name:
             response.update({'table_name': 'groups'})

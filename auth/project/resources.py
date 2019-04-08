@@ -11,11 +11,23 @@ class ProjectResource(Resource):
     use_token = True
 
     def on_get(self, req, resp, **kwargs):
+        """
+        get project by group id
+        url: projects/{group_id}/
+        """
         kwargs['group_id'] = kwargs.pop('id', None)
         get_request_single(Groups, resp, **kwargs)
 
     def on_post(self, req, resp, **kwargs):
-        data = json.load(req.stream)
+        """
+        Post(create) project
+        url: projects/
+        """
+        try:
+            data = json.load(req.stream)
+        except json.JSONDecodeError:
+            resp.status = falcon.HTTP_400
+            return
 
         if not data:
             resp.status = falcon.HTTP_400
@@ -33,6 +45,10 @@ class ProjectResource(Resource):
         resp.status = falcon.HTTP_201
 
     def on_put(self, req, resp, **kwargs):
+        """
+        PUT project by id with given data
+        url: projects/{id}/
+        """
         try:
             if 'id' not in kwargs.keys():
                 resp.status = falcon.HTTP_400
@@ -53,4 +69,8 @@ class ProjectResource(Resource):
             resp.status = falcon.HTTP_400
 
     def on_delete(self, req, resp, **kwargs):
+        """
+        DELETE project by id
+        url: projects/{id}/
+        """
         delete_request(Projects, resp, **kwargs)

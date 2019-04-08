@@ -27,10 +27,15 @@ def get_request_multiple(model: MODELS_UNION, params: dict, resp: falcon.Respons
 
     off_set = int(fields.pop('offset', 0))
     limit = int(fields.pop('limit', 0))
-    model_instance = model.objects.filter(**fields).order_by(sort)
+
+    same_fields = {x: fields[x] for x in model.fields & fields.keys()}
+
+    model_instance = model.objects.filter(**same_fields).order_by(sort)
 
     if limit:
         model_instance = model_instance[off_set:off_set + limit]
+    else:
+        model_instance = model_instance[off_set:]
 
     response_list = list_obj_to_serialize_format(model_instance, recurs=True)
     resp.media = response_list
@@ -134,7 +139,7 @@ def post_create_user(req: falcon.Request, resp: falcon.Response) -> None:
     user.save()
 
     generate_user_token(user)
-    resp.body = user.to_dict()
+    resp.media = user.to_dict()
     resp.status = falcon.HTTP_201
 
 
@@ -153,7 +158,7 @@ def delete_request(model: MODELS_UNION, resp: falcon.Response, **kwargs) -> None
         return
 
     model_instance = model.objects.filter(**kwargs).first()
-    if not model_instance:
+    if model_instance is None:
         resp.status = falcon.HTTP_400
         return
 
@@ -173,8 +178,6 @@ def list_obj_to_serialize_format(list_obj: list, recurs: bool = False) -> List[d
         var_dict = obj.to_dict(table_name=True)
         if recurs:
             if var_dict.get('table_name') == 'users':
-                print(obj)
-                print(obj.groups)
                 var_dict['groups'] = list_obj_to_serialize_format(obj.groups)
             elif var_dict.get('table_name') == 'groups':
                 var_dict['users'] = list_obj_to_serialize_format(obj.users)
