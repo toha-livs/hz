@@ -25,28 +25,36 @@ class UserResource(Resource):
     def on_get(self, req, resp, **kwargs):
         get_request_single(Users, resp, **kwargs)
 
+    def on_post(self, req, resp, **kwargs):
+        post_create_user(req, resp)
+
     def on_put(self, req, resp, **kwargs):
-        user = Users.objects.filter(id=kwargs.get('id'))
-        if not user:
-            resp.status = falcon.HTTP_404
+        user = Users.objects.filter(id=kwargs.get('id')).first()
+
+        if user is None:
+            resp.status = falcon.HTTP_400
             return
-        user = user[0]
-        data = json.load(req.stream)
+
+        try:
+            data = json.load(req.stream)
+        except json.JSONDecodeError:
+            resp.status = falcon.HTTP_400
+            return
+
         if data.get('password'):
             resp.status = falcon.HTTP_400('password is not changeable')
             return
+
+        # TODO: maybe user.update(**data) instead
         for key, value in data.items():
             setattr(user, key, value)
+
         user.save()
         generate_user_token(user)
         resp.status = falcon.HTTP_200
 
     def on_delete(self, req, resp, **kwargs):
         delete_request(Users, resp, **kwargs)
-
-    # for url: /users/registration/
-    def on_post(self, req, resp, **kwargs):
-        post_create_user(req, resp)
 
 
 class LoginResource(Resource):
@@ -78,8 +86,7 @@ class LoginResource(Resource):
             resp.status = falcon.HTTP_400
             return
 
-        # TODO: use Anton's to_dict instead
-        user = json.loads(user.to_json())
+        user = json.loads(user.to_dict())
         user['token'] = token.token
 
         resp.media = user

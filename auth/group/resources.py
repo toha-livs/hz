@@ -15,18 +15,17 @@ class GroupsResource(Resource):
 
     def on_post(self, req, resp, **kwargs):
         post_data = req.stream.read()
+
         if post_data:
             post_data = json.loads(post_data)
         else:
             post_data = {}
+
         try:
             group = Groups(**post_data)
+            group.save()
 
-            if group:
-                group.save()
-                resp.status = falcon.HTTP_200
-            else:
-                resp.status = falcon.HTTP_400
+            resp.status = falcon.HTTP_200
         except Exception as e:
             print(e)
             resp.status = falcon.HTTP_400
@@ -41,19 +40,19 @@ class GroupResource(Resource):
     def on_put(self, req, resp, **kwargs):
         try:
             if 'id' not in kwargs.keys():
-                resp.status = falcon.HTTP_404
-                return
-            group = Groups.objects.filter(**kwargs).first()
-            if not group:
                 resp.status = falcon.HTTP_400
                 return
+
+            group = Groups.objects.filter(**kwargs).first()
+
+            if group in None:
+                resp.status = falcon.HTTP_400
+                return
+
             update_data = json.loads(req.stream.read())
             group.update(**update_data)
-            if group:
-                group.save()
-                resp.status = falcon.HTTP_200
-            else:
-                resp.status = falcon.HTTP_400
+
+            resp.status = falcon.HTTP_200
         except Exception as e:
             print(e)
             resp.status = falcon.HTTP_400

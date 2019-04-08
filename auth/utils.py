@@ -149,7 +149,7 @@ def delete_request(model: MODELS_UNION, resp: falcon.Response, **kwargs) -> None
        :param resp: id of and element
        """
     if 'id' not in kwargs.keys():
-        resp.status = falcon.HTTP_404
+        resp.status = falcon.HTTP_400
         return
 
     model_instance = model.objects.filter(**kwargs).first()
