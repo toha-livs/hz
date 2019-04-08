@@ -1,13 +1,12 @@
-import datetime
 import json
+import datetime
 
 import falcon
-from mongoengine import Q
 
 from auth.resources import Resource
 from gusto_api.models import Users, UsersTokens
 from gusto_api.utils import encrypt
-from auth.utils import generate_user_token, get_request_multiple, delete_request, get_request_single
+from auth.utils import generate_user_token, get_request_multiple, delete_request, get_request_single, post_create_user
 
 
 class UsersResource(Resource):
@@ -17,20 +16,7 @@ class UsersResource(Resource):
         get_request_multiple(Users, req.params, resp)
 
     def on_post(self, req, resp, **kwargs):
-        data = json.load(req.stream)
-        if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
-            resp.status = falcon.HTTP_400
-            resp.body = 'user is already present'
-            return
-        user = Users(**data)
-        user.last_login = datetime.datetime.now()
-        user.date_created = datetime.datetime.now()
-        user.is_active = True
-        user.password = encrypt(user.email + user.tel + user.password)
-        user.save()
-        generate_user_token(user)
-        resp.body = user.to_json()
-        resp.status = falcon.HTTP_201
+        post_create_user(req, resp)
 
 
 class UserResource(Resource):
@@ -58,21 +44,9 @@ class UserResource(Resource):
     def on_delete(self, req, resp, **kwargs):
         delete_request(Users, resp, **kwargs)
 
-    ## for url: /users/registration/
-    def on_post(self, req, resp,  **kwargs):
-        data = json.load(req.stream)
-        if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
-            resp.status = falcon.HTTP_404
-            return
-        user = Users(**data)
-        user.last_login = datetime.datetime.now()
-        user.date_created = datetime.datetime.now()
-        user.is_active = True
-        user.password = encrypt(user.email + user.tel + user.password)
-        user.save()
-        generate_user_token(user)
-        resp.body = user.to_dict()
-        resp.status = falcon.HTTP_201
+    # for url: /users/registration/
+    def on_post(self, req, resp, **kwargs):
+        post_create_user(req, resp)
 
 
 class LoginResource(Resource):
