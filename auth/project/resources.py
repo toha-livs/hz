@@ -1,7 +1,6 @@
 import json
 
 import falcon
-from mongoengine.errors import NotUniqueError
 
 from auth.resources import Resource
 from auth.utils import delete_request
