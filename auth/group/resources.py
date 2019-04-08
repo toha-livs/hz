@@ -24,12 +24,13 @@ class GroupsResource(Resource):
 
             if group:
                 group.save()
-                resp.status = falcon.HTTP_200
+                resp.status = falcon.HTTP_201
             else:
                 resp.status = falcon.HTTP_400
         except Exception as e:
             print(e)
             resp.status = falcon.HTTP_400
+    # TODO: ask TL about validation data request, should I check this data, or not ?
 
 
 class GroupResource(Resource):
@@ -47,7 +48,7 @@ class GroupResource(Resource):
             if not group:
                 resp.status = falcon.HTTP_400
                 return
-            update_data = json.loads(req.stream.read())
+            update_data = json.load(req.stream)
             group.update(**update_data)
             if group:
                 group.save()
