@@ -11,6 +11,7 @@ class ProjectResource(Resource):
     use_token = True
 
     def on_get(self, req, resp, **kwargs):
+        kwargs['group_id'] = kwargs.pop('id', None)
         get_request_single(Groups, resp, **kwargs)
 
     def on_post(self, req, resp, **kwargs):

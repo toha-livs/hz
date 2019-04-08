@@ -3,5 +3,5 @@ from .resources import ProjectResource
 
 routes = [
     route('/', ProjectResource()),
-    route('/{group_id}/', ProjectResource()),
+    route('/{id}/', ProjectResource()),
 ]

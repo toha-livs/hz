@@ -235,101 +235,11 @@ def get_permissions_group(permissions_ids: List[List[int]]) -> list:
     [{'pk': 12, 'access': 'perm32_w'}, {'pk': 43, 'access': 'perm35_w'},]
     """
     response_list = []
-    # session.query(Permissions).filter(Permissions.pk.in_(permissions_ids)).all()
     for permission in Permissions.objects().all():
         response_list.append({'id': permission.pk, 'access': permission.get_access})
     return response_list
 
 
-# def get_serialize_obj_list(var_obj_list: list, deep_recurs: int) -> list:
-#     """
-#     function get list of objects class <Groups>, filtering reserved property,
-#     :param var_obj_list:
-#     [class <Groups>, class <Groups>]
-#     :param deep_recurs:
-#     :return:
-#     [{'pk': 12, 'name': 'hz'}, {'pk': 52, 'name': 'hz2'}]
-#     """
-#     response_list = []
-#     for var_obj in var_obj_list:
-#
-#         var_dict = get_serialize_object_to_dict(var_obj)
-#         if getattr(var_obj, 'permissions', False):
-#             var_dict['permissions'] = get_permissions_group(var_dict['permissions_ids'])
-#             var_dict.pop('permissions_ids', None)
-#         for field in getattr(var_obj, 'temp_fields', []):
-#             if getattr(var_obj, field, False) and deep_recurs != 0:
-#                 var_dict[field] = get_serialize_obj_list(getattr(var_obj, field), deep_recurs=deep_recurs - 1)
-#         response_list.append(var_dict)
-#
-#     return response_list
-
-#
-# def groups_with_info_users(session, groups=None) -> Union[list, None]:
-#     def del_privat_method(obj: MODELS_UNION) -> dict:
-#         return {k: v for k, v in vars(obj).items() if '_' != str(k)[0]}
-#
-#     def filter_data(data) -> list:
-#         res_data = []
-#         for i in data:
-#             res = {}
-#             for k, v in i.items():
-#
-#                 if isinstance(v, datetime):
-#                     res[k] = datetime.timestamp(v)
-#                 elif k == 'password':
-#                     continue
-#                 elif k == 'pk':
-#                     res['id'] = v
-#                 else:
-#                     res[k] = v
-#             res_data.append(res)
-#         return res_data
-#
-#     def get_permissions_info(obj) -> dict:
-#         return {'id': obj.pk, 'info': obj.get_access}
-#
-#     try:
-#         if groups is None:
-#             groups = Groups.objects.all()
-#         get_data = []
-#         for group in groups:
-#             group_column_filtered = del_privat_method(group)
-#             group_column_filtered['id'] = group_column_filtered['pk']
-#             del group_column_filtered['users_ids']
-#             del group_column_filtered['permissions_ids']
-#             del group_column_filtered['pk']
-#             group_column_filtered['users'] = filter_data(list(map(lambda obj: del_privat_method(obj), group.users)))
-#             group_column_filtered['permissions'] = list(map(lambda obj: get_permissions_info(obj), group.permissions))
-#             get_data.append(group_column_filtered)
-#         return get_data
-#     except Exception as e:
-#         print(e)
-
-
-# def get_univ_filter(model_obj: MODELS_UNION, params: dict) -> list:
-#     sort = params.get('sort', 'id')
-#     if sort not in model_obj.fields:
-#         sort = 'id'
-#     elif sort == 'g_type':
-#         sort = 'type'
-#     off_set = int(params.get('offset', 0))
-#     limit = int(params.get('limit', 0))
-#     reqursions_step = int(params.get('recur', 1))
-#     same_fields = params.keys() ^ model_obj.fields.keys()
-#     [params.pop(key, None) for key in ['sort', 'off_set', 'limit'] + list(same_fields)]
-#     query_list = model_obj.objects.filter(**params).order_by(sort)
-#     # query_list = session.query(model_obj).filter_by(**params).order_by(sort)
-#
-#     if limit:
-#         var_list = query_list.slice(off_set, off_set + limit).all()
-#     else:
-#         count = model_obj.objects.count()
-#         var_list = query_list.slice(off_set, count).all()
-#
-#     var_list = get_serialize_obj_list(var_list, deep_recurs=reqursions_step)
-#
-#     return var_list
 def filter_data(data):
     new_data = {}
     for key, value in data.items():

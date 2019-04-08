@@ -1,7 +1,7 @@
 from mongoengine import *
 from datetime import datetime, time
 
-connect('tests1')
+connect('tests')
 
 
 class LanguageTemplate(EmbeddedDocument):

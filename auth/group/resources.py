@@ -3,7 +3,7 @@ import json
 import falcon
 
 from auth.resources import Resource
-from auth.utils import get_request_multiple, delete_request, get_request_single, set_data
+from auth.utils import get_request_multiple, delete_request, get_request_single
 from gusto_api.models import Groups
 
 
@@ -19,12 +19,17 @@ class GroupsResource(Resource):
             post_data = json.loads(post_data)
         else:
             post_data = {}
-        group = set_data(Groups(), post_data)
-        if group:
-            group.save()
-            resp.status = falcon.HTTP_200
-        else:
-            resp.status = falcon.HTTP_500
+        try:
+            group = Groups(**post_data)
+
+            if group:
+                group.save()
+                resp.status = falcon.HTTP_200
+            else:
+                resp.status = falcon.HTTP_400
+        except Exception as e:
+            print(e)
+            resp.status = falcon.HTTP_400
 
 
 class GroupResource(Resource):
