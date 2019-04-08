@@ -4,8 +4,10 @@ from json.decoder import JSONDecodeError
 
 import falcon
 
+from mongoengine import Q
+
 from gusto_api.utils import encrypt
-from gusto_api.models import Groups, Permissions, Users, UsersTokens, Projects
+from gusto_api.models import Groups, Users, UsersTokens
 
 MODELS_UNION = Union[Type[Users], Type[Groups]]
 
@@ -80,107 +82,30 @@ def generate_users_tokens_by_group(group):
         generate_user_token(user)
 
 
-def post_create_user(data: str, response: falcon.Response) -> None:
+def post_create_user(request, response: falcon.Response) -> None:
     try:
-        data = falcon.json.load(data)
+        data = falcon.json.load(request.stream)
     except JSONDecodeError:
         response.status = falcon.HTTP_400
         return
 
-    same_user = Users.objects(Users.email.like(data.get('email'))) | (Users.tel.like(data.get('tel'))).first()
-    # same_user = Users.objects(Users.email(data.get('email'))) | (Users.tel(data.get('tel'))).first()
-
-    if same_user:
-        if same_user.email == data.get('email'):
-            response.body = "This email is already in use"
-        else:
-            response.body = "This tel is already use"
+    if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
         response.status = falcon.HTTP_400
+        response.body = 'user is already present'
         return
 
-    model_instance = Users()
-    same_fields = data.keys() & Users.fields.keys()
-    for field in same_fields:
-        if isinstance(data[field], Users.fields[field]):
-            if field == 'password':
-                setattr(model_instance, field, encrypt(data.get('email') + data.get('tel') + data[field]))
-            else:
-                setattr(model_instance, field, data[field])
-    model_instance.date_created = datetime.now()
-    model_instance.last_login = datetime.now()
-    model_instance.is_active = True
+    user = Users(**data)
 
-    model_instance.save()
-    generate_user_token(model_instance)
+    user.password = encrypt(user.email + user.tel + user.password)
+
+    user.date_created = datetime.now()
+    user.last_login = datetime.now()
+    user.is_active = True
+    user.save()
+
+    generate_user_token(user)
+    response.body = user.to_dict()
     response.status = falcon.HTTP_201
-
-
-# def get_request_util(model: MODELS_UNION, pk: int, response: falcon.Response) -> None:
-#     """
-#     Handler for GET requests.
-#         1) Checks if pk(id) is not None
-#         2) Found object from model by pk(id)
-#         3) request.media = object_dict
-#
-#     :param model: PostgreSQL model class
-#     :param pk: id of and element
-#     :param response: falcon response
-#     :return:
-#     """
-#     if pk is None:
-#         response.status = falcon.HTTP_404
-#         return
-#
-#     model_instance = model.objects(pk=pk).first()
-#     if not model_instance:
-#         response.status = falcon.HTTP_404
-#         return
-#
-#     response.status = falcon.HTTP_200
-#     response.media = get_serialize_object_to_dict(model_instance)
-
-
-# def put_request_util(model: MODELS_UNION, data: str, pk: int, response: falcon.Response) -> None:
-#     """
-#     Handler for PUT requests.
-#         1) Checks if pk(id) is not None
-#         2) Found object from model by pk(id)
-#         3) Tries to convert data into JSON
-#         4) Filter only fields that model contains
-#         5) Iterate through this fields and check if data is in proper type
-#         5) Update this fields with new data
-#
-#      :param model: PostgreSQL model class
-#      :param data: string from request.stream
-#      :param pk: id of and element
-#      :param response: falcon response
-#      :return:
-#      """
-#     if pk is None:
-#         response.status = falcon.HTTP_404
-#         return
-#
-#     model_instance = model.objects(pk=pk).first()
-#     if not model_instance:
-#         response.status = falcon.HTTP_404
-#         return
-#
-#     try:
-#         data = json.load(data)
-#     except JSONDecodeError:
-#         response.status = falcon.HTTP_400
-#         return
-#
-#     same_fields = data.keys() & model.fields.keys()
-#     for field in same_fields:
-#         if isinstance(data[field], model.fields[field]):
-#             if isinstance(getattr(model_instance, field), datetime):
-#                 setattr(model_instance, field, datetime.fromtimestamp(data[field]))
-#             else:
-#                 setattr(model_instance, field, data[field])
-#
-#     response.status = falcon.HTTP_200
-#     response.media = get_serialize_object_to_dict(model_instance)
 
 
 def delete_request(model, resp: falcon.Response, **kwargs) -> None:
@@ -191,8 +116,7 @@ def delete_request(model, resp: falcon.Response, **kwargs) -> None:
            3) Delete object from the collection
 
        :param model: MongoEngine model class
-       :param pk: id of and element
-       :param response: falcon response
+       :param resp: id of and element
        :return:
        """
     if 'id' not in kwargs.keys():
@@ -226,20 +150,6 @@ def list_obj_to_serialize_format(list_obj: list, recurs=None):
     return response_list
 
 
-def get_permissions_group(permissions_ids: List[List[int]]) -> list:
-    """
-    function get list of permissions_ids, and in cycle get property "get_access"
-    :param permissions_ids:
-    [[1, 323, 32], [1, 123, 213, 12]]
-    :return:
-    [{'pk': 12, 'access': 'perm32_w'}, {'pk': 43, 'access': 'perm35_w'},]
-    """
-    response_list = []
-    for permission in Permissions.objects().all():
-        response_list.append({'id': permission.pk, 'access': permission.get_access})
-    return response_list
-
-
 def filter_data(data):
     new_data = {}
     for key, value in data.items():
@@ -250,4 +160,3 @@ def filter_data(data):
         else:
             new_data[key] = value
     return new_data
-
