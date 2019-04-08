@@ -13,9 +13,17 @@ class UsersResource(Resource):
     use_token = True
 
     def on_get(self, req, resp, **kwargs):
+        """
+        GET all users
+        url: users/
+        """
         get_request_multiple(Users, req.params, resp)
 
     def on_post(self, req, resp, **kwargs):
+        """
+        POST(create) user
+        url: users/
+        """
         post_create_user(req, resp)
 
 
@@ -23,12 +31,24 @@ class UserResource(Resource):
     use_token = True
 
     def on_get(self, req, resp, **kwargs):
+        """
+        GET user by id
+        url: users/{id}/
+        """
         get_request_single(Users, resp, **kwargs)
 
     def on_post(self, req, resp, **kwargs):
+        """
+        POST(create) user via registration
+        url: users/registration/
+        """
         post_create_user(req, resp)
 
     def on_put(self, req, resp, **kwargs):
+        """
+        PUT user by id with given data
+        url: users/{id}/
+        """
         user = Users.objects.filter(id=kwargs.get('id')).first()
 
         if user is None:
@@ -42,23 +62,30 @@ class UserResource(Resource):
             return
 
         if data.get('password'):
-            resp.status = falcon.HTTP_400('password is not changeable')
+            resp.status = falcon.HTTP_400
+            resp.body = 'password is not changeable'
             return
 
-        # TODO: maybe user.update(**data) instead
-        for key, value in data.items():
-            setattr(user, key, value)
+        same_fields = {x: data[x] for x in user.fields & data.keys()}
+        user.update(**same_fields)
 
-        user.save()
         generate_user_token(user)
         resp.status = falcon.HTTP_200
 
     def on_delete(self, req, resp, **kwargs):
+        """
+        DELETE user bu id
+        url: users/{id}/
+        """
         delete_request(Users, resp, **kwargs)
 
 
 class LoginResource(Resource):
     def on_post(self, req, resp, **kwargs):
+        """
+        POST(login) user with given (email or telephone) and password and return user token
+        url: users/login/
+        """
         try:
             data = json.load(req.stream)
         except json.JSONDecodeError:
@@ -86,7 +113,12 @@ class LoginResource(Resource):
             resp.status = falcon.HTTP_400
             return
 
-        user = json.loads(user.to_dict())
+        try:
+            user = json.loads(user.to_dict())
+        except json.JSONDecodeError:
+            resp.status = falcon.HTTP_400
+            return
+
         user['token'] = token.token
 
         resp.media = user
