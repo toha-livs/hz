@@ -13,9 +13,15 @@ class UsersResource(Resource):
     use_token = True
 
     def on_get(self, req, resp, **kwargs):
+        """
+        return All users
+        """
         get_request_multiple(Users, req.params, resp)
 
     def on_post(self, req, resp, **kwargs):
+        """
+        create user url: /users/
+        """
         post_create_user(req, resp)
 
 
@@ -23,17 +29,23 @@ class UserResource(Resource):
     use_token = True
 
     def on_get(self, req, resp, **kwargs):
+        """
+        return user by user id
+        """
         get_request_single(Users, resp, **kwargs)
 
     def on_put(self, req, resp, **kwargs):
-        user = Users.objects.filter(id=kwargs.get('id'))
-        if not user:
+        """
+        Change info about user by user_id
+        """
+        user = Users.objects.filter(id=kwargs.get('id')).first()
+        if user is None:
             resp.status = falcon.HTTP_404
             return
-        user = user[0]
         data = json.load(req.stream)
         if data.get('password'):
-            resp.status = falcon.HTTP_400('password is not changeable')
+            resp.body = 'password is not changeable'
+            resp.status = falcon.HTTP_400
             return
         for key, value in data.items():
             setattr(user, key, value)
@@ -42,10 +54,16 @@ class UserResource(Resource):
         resp.status = falcon.HTTP_200
 
     def on_delete(self, req, resp, **kwargs):
+        """
+        delete user by user_id
+        """
         delete_request(Users, resp, **kwargs)
 
     # for url: /users/registration/
     def on_post(self, req, resp, **kwargs):
+        """
+        create user url: /users/registration/
+        """
         post_create_user(req, resp)
 
 

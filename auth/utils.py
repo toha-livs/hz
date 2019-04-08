@@ -13,6 +13,13 @@ MODELS_UNION = Union[Type[Users], Type[Groups]]
 
 
 def get_request_multiple(model, params, resp):
+    """
+    return all user after apply params
+    :param model: Groups or Users
+    :param params:
+    :param resp:
+    :return:
+    """
     fields = filter_data(params)
     sort = fields.pop('sort', 'id')
     if sort not in model.fields:
@@ -28,6 +35,12 @@ def get_request_multiple(model, params, resp):
 
 
 def get_request_single(model, resp, **kwargs):
+    """
+    :param model: Groups, Projects or Users
+    :param resp:
+    :param kwargs:
+    :return: model object
+    """
     if 'id' in kwargs.keys():
         model_instance = model.objects.filter(**kwargs).first()
     elif 'project_id' in kwargs.keys():
@@ -83,6 +96,10 @@ def generate_users_tokens_by_group(group):
 
 
 def post_create_user(request, response: falcon.Response) -> None:
+    """
+    if user with email or phone is exist return 'user is already present' in body
+    else return new user in media
+    """
     try:
         data = falcon.json.load(request.stream)
     except JSONDecodeError:
@@ -90,8 +107,8 @@ def post_create_user(request, response: falcon.Response) -> None:
         return
 
     if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
-        response.status = falcon.HTTP_400
         response.body = 'user is already present'
+        response.status = falcon.HTTP_400
         return
 
     user = Users(**data)
@@ -104,7 +121,7 @@ def post_create_user(request, response: falcon.Response) -> None:
     user.save()
 
     generate_user_token(user)
-    response.body = user.to_dict()
+    response.media = user.to_dict()
     response.status = falcon.HTTP_201
 
 
@@ -139,8 +156,6 @@ def list_obj_to_serialize_format(list_obj: list, recurs=None):
         var_dict = obj.to_dict(table_name=True)
         if recurs:
             if var_dict.get('table_name') == 'users':
-                print(obj)
-                print(obj.groups)
                 var_dict['groups'] = list_obj_to_serialize_format(obj.groups)
             elif var_dict.get('table_name') == 'groups':
                 var_dict['users'] = list_obj_to_serialize_format(obj.users)
@@ -151,6 +166,11 @@ def list_obj_to_serialize_format(list_obj: list, recurs=None):
 
 
 def filter_data(data):
+    """
+    convert str -> bool if value = 'true' ot 'false'
+    :param data:
+    :return:  converted data
+    """
     new_data = {}
     for key, value in data.items():
         if value == 'true':
