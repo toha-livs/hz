@@ -1,9 +1,10 @@
-from falcon_core.resources import Resource
-import falcon
-from gusto_api.models import Projects,Groups
 import json
-from auth.utils import get_request_single
 
+import falcon
+from falcon_core.resources import Resource
+
+from gusto_api.models import Projects, Groups
+from auth.utils import get_request_single
 
 
 class ProjectResource(Resource):
