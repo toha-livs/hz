@@ -4,7 +4,7 @@ import falcon
 from falcon_core.resources import Resource
 
 from gusto_api.models import Projects, Groups
-from auth.utils import get_request_single
+from auth.utils import get_request_single, delete_request
 
 
 class ProjectResource(Resource):
@@ -12,6 +12,21 @@ class ProjectResource(Resource):
 
     def on_get(self, req, resp, **kwargs):
         get_request_single(Groups, resp, **kwargs)
+
+    def on_post(self, req, resp, **kwargs):
+        data = json.load(req.stream)
+        if not data:
+            resp.status = falcon.HTTP_400
+            return
+        try:
+            new_project = Projects(**data)
+            new_project.save()
+        except:
+            resp.body = 'Error on commit.'
+            resp.status = falcon.HTTP_400
+            return
+        resp.media = new_project.to_dict()
+        resp.status = falcon.HTTP_201
 
     def on_put(self, req, resp, **kwargs):
         try:
@@ -35,9 +50,4 @@ class ProjectResource(Resource):
             resp.status = falcon.HTTP_400
 
     def on_delete(self, req, resp, **kwargs):
-        project = Projects.objects.filter(id=kwargs.get('id'))
-        if not project:
-            resp.status = falcon.HTTP_404
-            return
-        project.delete()
-        resp.status = falcon.HTTP_204
+        delete_request(Projects, resp, **kwargs)

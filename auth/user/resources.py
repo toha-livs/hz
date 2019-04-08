@@ -2,6 +2,7 @@ import datetime
 import json
 
 import falcon
+from mongoengine import Q
 
 from auth.resources import Resource
 from gusto_api.models import Users, UsersTokens
@@ -17,6 +18,10 @@ class UsersResource(Resource):
 
     def on_post(self, req, resp, **kwargs):
         data = json.load(req.stream)
+        if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
+            resp.status = falcon.HTTP_400
+            resp.body = 'user is already present'
+            return
         user = Users(**data)
         user.last_login = datetime.datetime.now()
         user.date_created = datetime.datetime.now()
@@ -52,6 +57,22 @@ class UserResource(Resource):
 
     def on_delete(self, req, resp, **kwargs):
         delete_request(Users, resp, **kwargs)
+
+    ## for url: /users/registration/
+    def on_post(self, req, resp,  **kwargs):
+        data = json.load(req.stream)
+        if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
+            resp.status = falcon.HTTP_404
+            return
+        user = Users(**data)
+        user.last_login = datetime.datetime.now()
+        user.date_created = datetime.datetime.now()
+        user.is_active = True
+        user.password = encrypt(user.email + user.tel + user.password)
+        user.save()
+        generate_user_token(user)
+        resp.body = user.to_dict()
+        resp.status = falcon.HTTP_201
 
 
 class LoginResource(Resource):
