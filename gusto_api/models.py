@@ -43,6 +43,19 @@ class Projects(Document):
     def groups(self):
         return Groups.objects.filter(project=self)
 
+    def to_dict(self, table_name=False):
+        response = dict(id=str(self.id),
+                        name={x: getattr(self.name, x) for x in self.name} if self.name is not None else {},
+                        domain=self.domain,
+                        additional_domains=self.additional_domains,
+                        address={x: getattr(self.address, x) for x in self.address} if self.address is not None else {},
+                        logo={x: getattr(self.logo, x) for x in self.logo} if self.logo is not None else {},
+                        favicon={x: getattr(self.favicon, x) for x in self.favicon} if self.favicon is not None else {})
+
+        if table_name:
+            response.update({'table_name': 'projects'})
+        return response
+
     def __str__(self):
         return f"<Projects id={self.id}, domain={self.domain}, tel={self.address}>"
 

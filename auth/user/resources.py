@@ -75,7 +75,6 @@ class UserResource(Resource):
         resp.status = falcon.HTTP_201
 
 
-
 class LoginResource(Resource):
     def on_post(self, req, resp, **kwargs):
         try:

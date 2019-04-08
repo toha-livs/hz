@@ -1,5 +1,3 @@
-# from falcon_core.resources import Resource
-
 from falcon import HTTP_404
 
 
