@@ -264,47 +264,47 @@ def get_permissions_group(permissions_ids: List[List[int]]) -> list:
 #
 #     return response_list
 
-
-def groups_with_info_users(session, groups=None) -> Union[list, None]:
-    def del_privat_method(obj: MODELS_UNION) -> dict:
-        return {k: v for k, v in vars(obj).items() if '_' != str(k)[0]}
-
-    def filter_data(data) -> list:
-        res_data = []
-        for i in data:
-            res = {}
-            for k, v in i.items():
-
-                if isinstance(v, datetime):
-                    res[k] = datetime.timestamp(v)
-                elif k == 'password':
-                    continue
-                elif k == 'pk':
-                    res['id'] = v
-                else:
-                    res[k] = v
-            res_data.append(res)
-        return res_data
-
-    def get_permissions_info(obj) -> dict:
-        return {'id': obj.pk, 'info': obj.get_access}
-
-    try:
-        if groups is None:
-            groups = Groups.objects.all()
-        get_data = []
-        for group in groups:
-            group_column_filtered = del_privat_method(group)
-            group_column_filtered['id'] = group_column_filtered['pk']
-            del group_column_filtered['users_ids']
-            del group_column_filtered['permissions_ids']
-            del group_column_filtered['pk']
-            group_column_filtered['users'] = filter_data(list(map(lambda obj: del_privat_method(obj), group.users)))
-            group_column_filtered['permissions'] = list(map(lambda obj: get_permissions_info(obj), group.permissions))
-            get_data.append(group_column_filtered)
-        return get_data
-    except Exception as e:
-        print(e)
+#
+# def groups_with_info_users(session, groups=None) -> Union[list, None]:
+#     def del_privat_method(obj: MODELS_UNION) -> dict:
+#         return {k: v for k, v in vars(obj).items() if '_' != str(k)[0]}
+#
+#     def filter_data(data) -> list:
+#         res_data = []
+#         for i in data:
+#             res = {}
+#             for k, v in i.items():
+#
+#                 if isinstance(v, datetime):
+#                     res[k] = datetime.timestamp(v)
+#                 elif k == 'password':
+#                     continue
+#                 elif k == 'pk':
+#                     res['id'] = v
+#                 else:
+#                     res[k] = v
+#             res_data.append(res)
+#         return res_data
+#
+#     def get_permissions_info(obj) -> dict:
+#         return {'id': obj.pk, 'info': obj.get_access}
+#
+#     try:
+#         if groups is None:
+#             groups = Groups.objects.all()
+#         get_data = []
+#         for group in groups:
+#             group_column_filtered = del_privat_method(group)
+#             group_column_filtered['id'] = group_column_filtered['pk']
+#             del group_column_filtered['users_ids']
+#             del group_column_filtered['permissions_ids']
+#             del group_column_filtered['pk']
+#             group_column_filtered['users'] = filter_data(list(map(lambda obj: del_privat_method(obj), group.users)))
+#             group_column_filtered['permissions'] = list(map(lambda obj: get_permissions_info(obj), group.permissions))
+#             get_data.append(group_column_filtered)
+#         return get_data
+#     except Exception as e:
+#         print(e)
 
 
 # def get_univ_filter(model_obj: MODELS_UNION, params: dict) -> list:
@@ -341,29 +341,3 @@ def filter_data(data):
             new_data[key] = value
     return new_data
 
-
-def set_data(group, data):
-    try:
-        for key, value in data.items():
-            if key == "project":
-                project = Projects.objects.filter(id=value).first()
-                if project:
-                    setattr(group, key, project)
-            elif key == "users" or key == "permissions" and isinstance(value, list):
-                objects = []
-                for object_id in value:
-                    if len(object_id) != 24:
-                        continue
-                    if key == "users":
-                        obj = Users.objects.filter(id=object_id).first()
-                    else:
-                        obj = Permissions.objects.filter(id=object_id).first()
-                    if obj:
-                        objects.append(obj)
-                setattr(group, key, objects)
-            else:
-                setattr(group, key, value)
-        return group
-    except Exception as e:
-        print(e)
-        return None
