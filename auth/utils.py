@@ -30,6 +30,14 @@ def get_request_single(model, resp, **kwargs):
         model_instance = model.objects.filter(**kwargs).first()
     elif 'project_id' in kwargs.keys():
         model_instance = model.objects.filter(project=kwargs['project_id']).first()
+    elif 'group_id' in kwargs.keys():
+        model_instance = model.objects.filter(id=kwargs['group_id']).first()
+
+        if model_instance is None:
+            resp.status = falcon.HTTP_400
+            return
+
+        model_instance = model_instance.project
     else:
         resp.status = falcon.HTTP_400
         return

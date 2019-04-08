@@ -22,6 +22,8 @@ class FileTemplate(EmbeddedDocument):
 
 
 class ImageTemplate(FileTemplate):
+    fields = {}
+
     thumbnail = StringField()
     small = StringField()
     medium = StringField()
@@ -32,6 +34,14 @@ class ImageTemplate(FileTemplate):
 
 
 class Projects(Document):
+    fields = {
+        'name': str,
+        'domain': str,
+        'additional_domains': list,
+        'address': list,
+        'logo': ImageTemplate,
+        'favicon': ImageTemplate
+    }
     name = EmbeddedDocumentField(LanguageTemplate)
     domain = StringField(unique=True)
     additional_domains = LineStringField()
@@ -42,6 +52,19 @@ class Projects(Document):
     @property
     def groups(self):
         return Groups.objects.filter(project=self)
+
+    def to_dict(self, table_name=False):
+        response = dict(id=str(self.id),
+                        name={x: getattr(self.name, x) for x in self.name} if self.name is not None else {},
+                        domain=self.domain,
+                        additional_domains=self.additional_domains,
+                        address={x: getattr(self.address, x) for x in self.address} if self.address is not None else {},
+                        logo={x: getattr(self.logo, x) for x in self.logo} if self.logo is not None else {},
+                        favicon={x: getattr(self.favicon, x) for x in self.favicon} if self.favicon is not None else {})
+
+        if table_name:
+            response.update({'table_name': 'projects'})
+        return response
 
     def __str__(self):
         return f"<Projects id={self.id}, domain={self.domain}, tel={self.address}>"
@@ -117,7 +140,7 @@ class Users(Document):
     def filter_groups(**kwargs):
         return Groups.objects.filter(**kwargs).all()
 
-    def to_dict(self, table_name=None):
+    def to_dict(self, table_name=False):
         response = dict(id=str(self.id), name=self.name, email=self.email,
                         last_login=datetime.timestamp(self.last_login),
                         date_created=datetime.timestamp(datetime.combine(self.date_created, time.min)),
@@ -164,7 +187,7 @@ class Groups(Document):
     def __str__(self):
         return f"<Group id={self.id}, users={self.users}, project={self.project}>"
 
-    def to_dict(self, table_name=None):
+    def to_dict(self, table_name=False):
         response = dict(id=str(self.id), name=self.name,
                         project=str(self.project.id), permissions=[perm.get_access for perm in self.permissions],
                         g_type=self.g_type, is_owner=self.is_owner)
