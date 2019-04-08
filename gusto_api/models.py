@@ -32,6 +32,8 @@ class ImageTemplate(FileTemplate):
 
 
 class Projects(Document):
+
+
     name = EmbeddedDocumentField(LanguageTemplate)
     domain = StringField(unique=True)
     additional_domains = LineStringField()
