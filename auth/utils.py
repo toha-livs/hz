@@ -1,10 +1,15 @@
+import cgi
+
 from typing import Union, List, Type
 from datetime import datetime
 from json.decoder import JSONDecodeError
 
 import falcon
+import unidecode
+import requests
 
 from mongoengine import Q
+from falcon_core.config import settings
 
 from gusto_api.utils import encrypt
 from gusto_api.models import Groups, Users, UsersTokens, Projects
@@ -202,3 +207,27 @@ def filter_data(data: dict) -> dict:
         else:
             new_data[key] = value
     return new_data
+
+
+def send_files_to_file_server(request: falcon.Request, response: falcon.Response) -> None:
+    """
+    Sends files to a specific route of the file-server depending on a file type
+    """
+    URLS = {
+        'images': 'images/',
+        'videos': 'videos/',
+        'files': 'files/'
+    }
+    form = cgi.FieldStorage(fp=request.stream, environ=request.env)
+    for url in URLS:
+        if form.getvalue(url):
+            if isinstance(form[url], list):
+                files = [(url, (unidecode.unidecode(x.filename), x.file)) for x in form[url]]
+            else:
+                files = [(url, (unidecode.unidecode(form[url].filename), form[url].file))]
+
+            rp = requests.post(settings.FILE_SERVER_URL + URLS[url], files=files)
+            if rp.status_code != 200:
+                response.status = falcon.HTTP_400
+                break
+            response.status = str(rp.status_code)

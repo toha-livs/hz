@@ -23,3 +23,5 @@ ROUTER_CONVERTERS = {}
 ROUTES = 'gusto_api.routes'
 
 DEPLOY = {}
+
+FILE_SERVER_URL = 'http://localhost:8002/'
