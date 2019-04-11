@@ -226,7 +226,7 @@ def send_files_to_file_server(request: falcon.Request, response: falcon.Response
             else:
                 files = [(url, (unidecode.unidecode(form[url].filename), form[url].file))]
 
-            rp = requests.post(settings.FILE_SERVER_URL + URLS[url], files=files)
+            rp = requests.post('http://192.168.0.186:8002/' + URLS[url], files=files)
             if rp.status_code != 200:
                 response.status = falcon.HTTP_400
                 break
