@@ -1,12 +1,14 @@
 import json
 import datetime
+import time
 
 import falcon
 
 from auth.resources import Resource
 from gusto_api.models import Users, UsersTokens
 from gusto_api.utils import encrypt
-from auth.utils import generate_user_token, get_request_multiple, delete_request, get_request_single, post_create_user
+from auth.utils import generate_user_token, get_request_multiple, delete_request, get_request_single, post_create_user, \
+    list_obj_to_serialize_format
 
 
 class UsersResource(Resource):
@@ -81,6 +83,7 @@ class UserResource(Resource):
 
 
 class LoginResource(Resource):
+
     def on_post(self, req, resp, **kwargs):
         """
         POST(login) user with given (email or telephone) and password and return user token
@@ -113,11 +116,7 @@ class LoginResource(Resource):
             resp.status = falcon.HTTP_400
             return
 
-        try:
-            user = json.loads(user.to_dict())
-        except json.JSONDecodeError:
-            resp.status = falcon.HTTP_400
-            return
+        user = list_obj_to_serialize_format([user], recurs=True)[0]
 
         user['token'] = token.token
 

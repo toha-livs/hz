@@ -141,7 +141,7 @@ class Users(Document):
 
     def to_dict(self, table_name=False):
         response = dict(id=str(self.id), name=self.name, email=self.email,
-                        last_login=datetime.timestamp(self.last_login),
+                        # last_login=datetime.timestamp(self.last_login),
                         date_created=datetime.timestamp(datetime.combine(self.date_created, time.min)),
                         is_active=self.is_active, image=self.image, tel=self.tel)
         if table_name:

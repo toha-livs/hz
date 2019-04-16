@@ -24,9 +24,13 @@ class AuthMiddleware(BaseMiddleware):
 
     def process_request(self, req, resp):
         # 'Bearer token'
+        # TODO: может "брать" токен только если он нужен в ресурсе?
         token = req.get_header('Authorization')
         if token:
-            t_type, token = token.split()
+            try:
+                t_type, token = token.split()
+            except ValueError:
+                token = ''
         self.token = token
 
     def process_resource(self, req: falcon.Request, resp: falcon.Response, resource, params):

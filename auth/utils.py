@@ -1,8 +1,8 @@
 import cgi
+import json
 
 from typing import Union, List, Type
 from datetime import datetime
-from json.decoder import JSONDecodeError
 
 import falcon
 import unidecode
@@ -117,33 +117,73 @@ def generate_users_tokens_by_group(group: Groups):
         generate_user_token(user)
 
 
+# def post_create_user(req: falcon.Request, resp: falcon.Response) -> None:
+#     """
+#     Create user. Handler for HTTP POST request on users/login/ and /users/
+#     :param req: instance of falcon.Request class
+#     :param resp: instance of falcon.Response class
+#     """
+#     form = cgi.FieldStorage(fp=req.stream, environ=req.env)
+#     print(form['tel'].value)
+#     try:
+#         data = falcon.json.load(req.stream)
+#     except JSONDecodeError:
+#         resp.status = falcon.HTTP_400
+#         return
+#
+#     if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
+#         resp.status = falcon.HTTP_400
+#         resp.body = 'user is already present'
+#         return
+#
+#     user = Users(**data)
+#
+#     user.password = encrypt(user.email + user.tel + user.password)
+#
+#     user.date_created = datetime.now()
+#     user.last_login = datetime.now()
+#     user.is_active = True
+#     user.image = send_files_to_file_server(req, resp, 'image', 'image/')
+#     print(user.image)
+#     user.save()
+#
+#     generate_user_token(user)
+#     resp.media = user.to_dict()
+#     resp.status = falcon.HTTP_201
+
+# NEW!!!!!
 def post_create_user(req: falcon.Request, resp: falcon.Response) -> None:
     """
     Create user. Handler for HTTP POST request on users/login/ and /users/
     :param req: instance of falcon.Request class
     :param resp: instance of falcon.Response class
     """
-    try:
-        data = falcon.json.load(req.stream)
-    except JSONDecodeError:
-        resp.status = falcon.HTTP_400
-        return
+    data = cgi.FieldStorage(fp=req.stream, environ=req.env)
 
-    if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
+    if Users.objects.filter((Q(email=data['email'].value) or (Q(tel=data['tel'].value)))):
         resp.status = falcon.HTTP_400
         resp.body = 'user is already present'
         return
 
-    user = Users(**data)
+    data_keys = data.keys()
+    data_keys.remove('images')
+    new_d = {x: data[x].value for x in data_keys}
+    user = Users(**new_d)
 
     user.password = encrypt(user.email + user.tel + user.password)
 
     user.date_created = datetime.now()
     user.last_login = datetime.now()
     user.is_active = True
-    user.save()
+    try:
+        images = json.loads(send_files_to_file_server(data['images'], resp, 'images', 'images/'))
+    except json.JSONDecodeError as e:
+        print(e)
+        images = {}
 
-    generate_user_token(user)
+    user.image = req.forwarded_prefix + "/" + images.get('image', '')
+    # user.save()
+    # generate_user_token(user)
     resp.media = user.to_dict()
     resp.status = falcon.HTTP_201
 
@@ -209,25 +249,52 @@ def filter_data(data: dict) -> dict:
     return new_data
 
 
-def send_files_to_file_server(request: falcon.Request, response: falcon.Response) -> None:
+# def send_files_to_file_server(data, response: falcon.Response, field=None, url=None) -> None:
+#     """
+#     Sends files to a specific route of the file-server depending on a file type
+#     """
+#
+#     # urls = {
+#     #     'images': 'images/',
+#     #     'videos': 'videos/',
+#     #     'files': 'files/'
+#     # }
+#
+#     form = cgi.FieldStorage(fp=request.stream, environ=request.env)
+#
+#     if form.getvalue(field):
+#         if isinstance(form[field], list):
+#             files = [(field, (unidecode.unidecode(x.filename), x.file)) for x in form[field]]
+#         else:
+#             files = [(field, (unidecode.unidecode(form[field].filename), form[field].file))]
+#
+#         rp = requests.post(settings.FILE_SERVER_URL + url, files=files)
+#         if rp.status_code != 200:
+#             response.status = falcon.HTTP_400
+#             return
+#         response.status = str(rp.status_code)
+#         return rp.text
+
+# NEW!!!!!
+def send_files_to_file_server(files, response: falcon.Response, field=None, url=None) -> None:
     """
     Sends files to a specific route of the file-server depending on a file type
     """
-    URLS = {
-        'images': 'images/',
-        'videos': 'videos/',
-        'files': 'files/'
-    }
-    form = cgi.FieldStorage(fp=request.stream, environ=request.env)
-    for url in URLS:
-        if form.getvalue(url):
-            if isinstance(form[url], list):
-                files = [(url, (unidecode.unidecode(x.filename), x.file)) for x in form[url]]
-            else:
-                files = [(url, (unidecode.unidecode(form[url].filename), form[url].file))]
 
-            rp = requests.post(settings.FILE_SERVER_URL + URLS[url], files=files)
-            if rp.status_code != 200:
-                response.status = falcon.HTTP_400
-                break
-            response.status = str(rp.status_code)
+    # urls = {
+    #     'images': 'images/',
+    #     'videos': 'videos/',
+    #     'files': 'files/'
+    # }
+
+    if isinstance(files, list):
+        files = [(field, (unidecode.unidecode(x.filename), x.file)) for x in files]
+    else:
+        files = [(field, (unidecode.unidecode(files.filename), files.file))]
+
+    rp = requests.post(settings.FILE_SERVER_URL + url, files=files)
+    if rp.status_code != 200:
+        response.status = falcon.HTTP_400
+        return
+    response.status = str(rp.status_code)
+    return rp.text
