@@ -4,6 +4,37 @@ from datetime import datetime, time
 connect('tests1')
 
 
+class Currencies(Document):
+    name = StringField()
+    symbol = StringField()
+    code = StringField(unique=True)
+    rate = IntField()
+    rates = IntField()
+    last_update = IntField()
+
+    def to_dict(self):
+        return dict(id=str(self.id), name=self.name, symbol=self.symbol, code=self.code, rate=self.rate,
+                    rates=self.rates, lastUpdate=datetime.timestamp(datetime.combine(self.last_update, time.min)))
+
+    def __str__(self):
+        return f"<Currencies id={self.id}, name={self.name}, symbol={self.symbol}, code={self.code}>"
+
+
+class Countries(Document):
+    name = StringField()
+    iso2 = StringField(unique=True)
+    dial_code = StringField()
+    priority = IntField()
+    area_codes = ListField()
+    _delete = BooleanField(default=False)
+    user_delete = StringField()
+    date_delete = DateField()
+    currency = ReferenceField(Currencies)
+
+    def __str__(self):
+        return f"<Currencies id={self.id}, name={self.name}, iso2={self.iso2}, currency={self.currency}>"
+
+
 class LanguageTemplate(EmbeddedDocument):
     en = StringField(max_length=255)
     ru = StringField(max_length=255)
@@ -11,6 +42,24 @@ class LanguageTemplate(EmbeddedDocument):
 
     def __str__(self):
         return f"<LanguageTemplate en={self.en}, ru={self.ru}, uk={self.uk}>"
+
+
+class Cities(Document):
+    active = BooleanField()
+    country_code = StringField()
+    default = BooleanField()
+    name = EmbeddedDocumentField(LanguageTemplate)
+    lat = IntField()
+    lng = IntField()
+    _delete = BooleanField(default=False)
+    user_delete = StringField()
+    date_delete = DateField()
+    language = StringField()
+    number_phone = StringField()
+    exist_store = BooleanField()
+
+    def __str__(self):
+        return f"<City id={self.id} country_code={self.country_code}, name={self.name}>"
 
 
 class FileTemplate(EmbeddedDocument):
