@@ -4,6 +4,61 @@ from datetime import datetime, time
 connect('tests')
 
 
+class Currencies(Document):
+    fields = {
+        'name': str,
+        'symbol': str,
+        'code': str,
+        'rate': int,
+        'rates': list,
+        'last_update': int,
+    }
+    name = StringField()
+    symbol = StringField()
+    code = StringField(unique=True)
+    rate = IntField()
+    rates = IntField()
+    last_update = DateTimeField()
+
+    def to_dict(self, table_name=False):
+        return dict(id=str(self.id), name=self.name, symbol=self.symbol, code=self.code, rate=self.rate,
+                    rates=self.rates, lastUpdate=datetime.timestamp(datetime.combine(self.last_update, time.min)))
+
+    def __str__(self):
+        return f"<Currencies id={self.id}, name={self.name}, symbol={self.symbol}, code={self.code}>"
+
+
+class Countries(Document):
+    fields = {
+        'name': str,
+        'iso2': str,
+        'dial_code': str,
+        'priority': int,
+        'area_codes': list,
+    }
+    name = StringField()
+    iso2 = StringField(unique=True, required=True)
+    dial_code = StringField()
+    priority = IntField()
+    area_codes = ListField()
+    currency = ReferenceField(Currencies)
+
+    def to_dict(self, table_name=False):
+        response = dict(id=str(self.id),
+                        name=self.name,
+                        iso2=self.iso2,
+                        dial_code=self.dial_code,
+                        priority=self.priority,
+                        area_codes=self.area_codes,
+                        currency=self.currency.name,
+                        )
+
+        return response
+
+    def __str__(self):
+        return f"<Currencies id={self.id}, name={self.name}, iso2={self.iso2}, currency={self.currency}>"
+
+
 class LanguageTemplate(EmbeddedDocument):
     en = StringField(max_length=255)
     ru = StringField(max_length=255)
@@ -11,6 +66,24 @@ class LanguageTemplate(EmbeddedDocument):
 
     def __str__(self):
         return f"<LanguageTemplate en={self.en}, ru={self.ru}, uk={self.uk}>"
+
+
+class Cities(Document):
+    active = BooleanField()
+    country_code = StringField()
+    default = BooleanField()
+    name = EmbeddedDocumentField(LanguageTemplate)
+    lat = IntField()
+    lng = IntField()
+    _delete = BooleanField(default=False)
+    user_delete = StringField()
+    date_delete = DateField()
+    language = StringField()
+    number_phone = StringField()
+    exist_store = BooleanField()
+
+    def __str__(self):
+        return f"<City id={self.id} country_code={self.country_code}, name={self.name}>"
 
 
 class FileTemplate(EmbeddedDocument):
@@ -103,7 +176,6 @@ class GroupsTemplates(Document):
 
 class Users(Document):
     fields = {'name': str,
-              'login': str,
               'email': str,
               'password': str,
               'last_login': int,
@@ -189,7 +261,8 @@ class Groups(Document):
 
     def to_dict(self, table_name=False):
         response = dict(id=str(self.id), name=self.name,
-                        project=str(self.project.id), permissions=[perm.get_access for perm in self.permissions],
+                        project=str(self.project.id) if self.project else None,
+                        permissions=[perm.get_access for perm in self.permissions],
                         g_type=self.g_type, is_owner=self.is_owner)
         if table_name:
             response.update({'table_name': 'groups'})

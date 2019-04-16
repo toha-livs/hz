@@ -6,8 +6,8 @@ os.environ.setdefault('FALCON_SETTINGS_MODULE', 'gusto_api.settings')
 from gusto_api.utils import encrypt
 from gusto_api.models import (
     Users, Groups, Permissions,
-    UsersTokens, Projects, LanguageTemplate
-)
+    UsersTokens, Projects, LanguageTemplate, Countries,
+    Currencies)
 from auth.utils import generate_users_tokens_by_group
 
 
@@ -108,5 +108,37 @@ def update_user_tokens():
         generate_users_tokens_by_group(group)
 
 
+def fun():
+    currencies_amount = 10
+    currencies = []
+    counter = 0
+    for i in range(currencies_amount):
+        counter += 1
+        curr = Currencies(
+            name="curr_" + str(counter),
+            symbol="symbol_" + str(counter),
+            code="code_" + str(counter),
+            rate=counter,
+            rates=counter,
+            last_update=datetime.datetime.now(),
+        )
+        curr.save()
+        currencies.append(curr)
+    countries_amount = 10
+    counter = 0
+    countries = []
+    for i in range(countries_amount):
+        counter += 1
+        country = Countries(name='country_' + str(counter),
+                            iso2='iso2' + str(counter),
+                            dial_code='dial_code' + str(counter),
+                            priority=counter,
+                            currency=currencies[i]
+                            )
+        country.save()
+        countries.append(country)
+
+
 if __name__ == '__main__':
-    fill_db()
+    # fill_db()
+    fun()

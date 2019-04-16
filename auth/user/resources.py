@@ -14,13 +14,15 @@ class UsersResource(Resource):
 
     def on_get(self, req, resp, **kwargs):
         """
-        return All users
+        GET all users
+        url: users/
         """
         get_request_multiple(Users, req.params, resp)
 
     def on_post(self, req, resp, **kwargs):
         """
-        create user url: /users/
+        POST(create) user
+        url: users/
         """
         post_create_user(req, resp)
 
@@ -30,45 +32,60 @@ class UserResource(Resource):
 
     def on_get(self, req, resp, **kwargs):
         """
-        return user by user id
+        GET user by id
+        url: users/{id}/
         """
         get_request_single(Users, resp, **kwargs)
 
+    def on_post(self, req, resp, **kwargs):
+        """
+        POST(create) user via registration
+        url: users/registration/
+        """
+        post_create_user(req, resp)
+
     def on_put(self, req, resp, **kwargs):
         """
-        Change info about user by user_id
+        PUT user by id with given data
+        url: users/{id}/
         """
         user = Users.objects.filter(id=kwargs.get('id')).first()
+
         if user is None:
             resp.status = falcon.HTTP_404
             return
-        data = json.load(req.stream)
-        if data.get('password'):
-            resp.body = 'password is not changeable'
+
+        try:
+            data = json.load(req.stream)
+        except json.JSONDecodeError:
             resp.status = falcon.HTTP_400
             return
-        for key, value in data.items():
-            setattr(user, key, value)
-        user.save()
+
+        if data.get('password'):
+            resp.status = falcon.HTTP_400
+            resp.body = 'password is not changeable'
+            return
+
+        same_fields = {x: data[x] for x in user.fields & data.keys()}
+        user.update(**same_fields)
+
         generate_user_token(user)
         resp.status = falcon.HTTP_200
 
     def on_delete(self, req, resp, **kwargs):
         """
-        delete user by user_id
+        DELETE user bu id
+        url: users/{id}/
         """
         delete_request(Users, resp, **kwargs)
-
-    # for url: /users/registration/
-    def on_post(self, req, resp, **kwargs):
-        """
-        create user url: /users/registration/
-        """
-        post_create_user(req, resp)
 
 
 class LoginResource(Resource):
     def on_post(self, req, resp, **kwargs):
+        """
+        POST(login) user with given (email or telephone) and password and return user token
+        url: users/login/
+        """
         try:
             data = json.load(req.stream)
         except json.JSONDecodeError:
@@ -96,8 +113,12 @@ class LoginResource(Resource):
             resp.status = falcon.HTTP_400
             return
 
-        # TODO: use Anton's to_dict instead
-        user = json.loads(user.to_json())
+        try:
+            user = json.loads(user.to_dict())
+        except json.JSONDecodeError:
+            resp.status = falcon.HTTP_400
+            return
+
         user['token'] = token.token
 
         resp.media = user
