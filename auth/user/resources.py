@@ -52,7 +52,7 @@ class UserResource(Resource):
         user = Users.objects.filter(id=kwargs.get('id')).first()
 
         if user is None:
-            resp.status = falcon.HTTP_400
+            resp.status = falcon.HTTP_404
             return
 
         try:
