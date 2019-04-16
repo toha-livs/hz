@@ -6,8 +6,8 @@ os.environ.setdefault('FALCON_SETTINGS_MODULE', 'gusto_api.settings')
 from gusto_api.utils import encrypt
 from gusto_api.models import (
     Users, Groups, Permissions,
-    UsersTokens, Projects, LanguageTemplate
-)
+    UsersTokens, Projects, LanguageTemplate, Cities, Countries,
+    Currencies)
 from auth.utils import generate_users_tokens_by_group
 
 
@@ -108,5 +108,27 @@ def update_user_tokens():
         generate_users_tokens_by_group(group)
 
 
+#### anton
+def seed_cities():
+    # currency1 = Currencies(name='Grivna', symbol='grn', code='380', rate=25, rates=27, last_update=datetime.datetime.now())
+    # currency2 = Currencies(name='Dollar', symbol='usd', code='180', rate=1, rates=1,
+    #                        last_update=datetime.datetime.now())
+    # currency1.save()
+    # currency2.save()
+    #
+    # coutry1 = Countries(name='Ukraine', iso2='380', dial_code='test1', priority=1, area_codes=[1, 2], currency=currency1)
+    # coutry2 = Countries(name='USA', iso2='180', dial_code='test2', priority=2, area_codes=[3, 1], currency=currency2)
+    # coutry1.save()
+    # coutry2.save()
+
+    city1 = Cities(active=True, country_code='380', default=False, name={'en': 'test1'}, lat=1.1213, lng=2.123, language='test1', number_phone='325234123423', exist_store=True)
+    city2 = Cities(active=True, country_code='180', default=False, name={'ru': 'тест1'}, lat=1.1213, lng=2.123,
+                   language='test1', number_phone='3423', exist_store=False)
+    city1.save()
+    city2.save()
+    # for i in range(5):
+    #     city = Cities(active=True, )
+
+
 if __name__ == '__main__':
-    fill_db()
+    seed_cities()

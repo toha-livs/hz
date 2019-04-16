@@ -1,5 +1,5 @@
 from mongoengine import *
-from datetime import datetime, time
+from datetime import datetime, time, date
 
 connect('tests1')
 
@@ -10,7 +10,7 @@ class Currencies(Document):
     code = StringField(unique=True)
     rate = IntField()
     rates = IntField()
-    last_update = IntField()
+    last_update = DateField()
 
     def to_dict(self):
         return dict(id=str(self.id), name=self.name, symbol=self.symbol, code=self.code, rate=self.rate,
@@ -26,9 +26,6 @@ class Countries(Document):
     dial_code = StringField()
     priority = IntField()
     area_codes = ListField()
-    _delete = BooleanField(default=False)
-    user_delete = StringField()
-    date_delete = DateField()
     currency = ReferenceField(Currencies)
 
     def __str__(self):
@@ -36,27 +33,56 @@ class Countries(Document):
 
 
 class LanguageTemplate(EmbeddedDocument):
+    fields_list = ['en', 'ru', 'uk']
     en = StringField(max_length=255)
     ru = StringField(max_length=255)
     uk = StringField(max_length=255)
+
+    def get_created(self):
+        response = {}
+        for i in self.fields_list:
+            if getattr(self, i) is not None:
+                response[i] = getattr(self, i)
+        return response
 
     def __str__(self):
         return f"<LanguageTemplate en={self.en}, ru={self.ru}, uk={self.uk}>"
 
 
 class Cities(Document):
+    fields = {
+        'name': LanguageTemplate,
+        'country_code': str,
+        'default': bool,
+        'active': str,
+        'lat': int,
+        'lng': int,
+        'language': str,
+        'number_phone': str,
+        'exist_store': bool
+    }
+
     active = BooleanField()
-    country_code = StringField()
+    country_code = StringField(required=True)
     default = BooleanField()
     name = EmbeddedDocumentField(LanguageTemplate)
     lat = IntField()
     lng = IntField()
-    _delete = BooleanField(default=False)
-    user_delete = StringField()
-    date_delete = DateField()
     language = StringField()
     number_phone = StringField()
     exist_store = BooleanField()
+
+    def to_dict(self, table_name=None):
+        return {'name': self.name.get_created(),
+                'country_code': self.country_code,
+                'default': self.default,
+                'active': self.active,
+                'lat': self.lat,
+                'lng': self.lng,
+                'language': self.language,
+                'number_phone': self.number_phone,
+                'exist_store': self.exist_store
+                }
 
     def __str__(self):
         return f"<City id={self.id} country_code={self.country_code}, name={self.name}>"
