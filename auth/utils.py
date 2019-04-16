@@ -123,28 +123,34 @@ def post_create_user(req: falcon.Request, resp: falcon.Response) -> None:
     :param req: instance of falcon.Request class
     :param resp: instance of falcon.Response class
     """
-    try:
-        data = falcon.json.load(req.stream)
-    except JSONDecodeError:
-        resp.status = falcon.HTTP_400
-        return
 
-    if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
-        resp.status = falcon.HTTP_400
-        resp.body = 'user is already present'
-        return
+    form = cgi.FieldStorage(fp=req.stream, environ=req.env)
+    print(form.list)
 
-    user = Users(**data)
+    print(dir(form))
+    print()
+    # try:
+    #     data = falcon.json.load(req.stream)
+    # except JSONDecodeError:
+    #     resp.status = falcon.HTTP_400
+    #     return
+    #
+    # if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
+    #     resp.status = falcon.HTTP_400
+    #     resp.body = 'user is already present'
+    #     return
 
-    user.password = encrypt(user.email + user.tel + user.password)
-
-    user.date_created = datetime.now()
-    user.last_login = datetime.now()
-    user.is_active = True
-    user.save()
-
-    generate_user_token(user)
-    resp.media = user.to_dict()
+    # user = Users(**data)
+    #
+    # user.password = encrypt(user.email + user.tel + user.password)
+    #
+    # user.date_created = datetime.now()
+    # user.last_login = datetime.now()
+    # user.is_active = True
+    # user.save()
+    #
+    # generate_user_token(user)
+    # resp.media = user.to_dict()
     resp.status = falcon.HTTP_201
 
 
