@@ -122,6 +122,12 @@ def post_create_user(req: falcon.Request, resp: falcon.Response) -> None:
     :param req: instance of falcon.Request class
     :param resp: instance of falcon.Response class
     """
+
+    # form = cgi.FieldStorage(fp=req.stream, environ=req.env)
+    # print(form.list)
+    #
+    # print(dir(form))
+    # print()
     try:
         data = falcon.json.load(req.stream)
     except JSONDecodeError:
