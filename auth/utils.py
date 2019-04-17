@@ -12,9 +12,9 @@ from mongoengine import Q
 from falcon_core.config import settings
 
 from gusto_api.utils import encrypt
-from gusto_api.models import Groups, Users, UsersTokens, Projects
+from gusto_api.models import Groups, Users, UsersTokens, Projects, Currencies, Countries, Cities
 
-MODELS_UNION = Union[Type[Users], Type[Groups], Type[Projects]]
+MODELS_UNION = Union[Type[Users], Type[Groups], Type[Projects], Type[Currencies], Type[Countries], Type[Cities]]
 
 
 def get_request_multiple(model: MODELS_UNION, params: dict, resp: falcon.Response) -> None:

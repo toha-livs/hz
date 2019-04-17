@@ -2,7 +2,7 @@ from falcon_core.resources import Resource
 from auth.utils import get_request_multiple, get_request_single, delete_request
 from gusto_api.models import Countries, Currencies
 import falcon
-import json
+import json, datetime
 
 
 class CurrenciesResource(Resource):
@@ -20,7 +20,7 @@ class CurrenciesResource(Resource):
                 post_data = json.loads(post_data)
             else:
                 post_data = {}
-
+            post_data['last_update'] = datetime.datetime.now()
             country = Currencies(**post_data)
             country.save()
 
@@ -48,10 +48,12 @@ class CurrencyResource(Resource):
                 return
 
             update_data = json.loads(req.stream.read())
+            update_data['last_update'] = datetime.datetime.now()
             country.update(**update_data)
             resp.status = falcon.HTTP_200
         except Exception as e:
             print(e)
+            print('qweqweqwqweqweqweqweqewqweeqw')
             resp.status = falcon.HTTP_400
 
     def on_delete(self, req, resp, **kwargs):

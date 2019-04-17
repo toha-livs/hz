@@ -13,16 +13,17 @@ class Currencies(Document):
         'rates': list,
         'last_update': int,
     }
-    name = StringField()
-    symbol = StringField()
-    code = StringField(unique=True)
+    name = StringField(required=True)
+    symbol = StringField(required=True)
+    code = StringField(unique=True, required=True)
     rate = IntField()
     rates = IntField()
     last_update = DateTimeField()
 
     def to_dict(self, table_name=False):
         return dict(id=str(self.id), name=self.name, symbol=self.symbol, code=self.code, rate=self.rate,
-                    rates=self.rates, lastUpdate=datetime.timestamp(datetime.combine(self.last_update, time.min)))
+                    rates=self.rates, lastUpdate=datetime.timestamp(
+                datetime.combine(self.last_update, time.min))) if self.last_update is not None else None
 
     def __str__(self):
         return f"<Currencies id={self.id}, name={self.name}, symbol={self.symbol}, code={self.code}>"
@@ -35,13 +36,14 @@ class Countries(Document):
         'dial_code': str,
         'priority': int,
         'area_codes': list,
+        'currency': Currencies,
     }
-    name = StringField()
+    name = StringField(required=True)
     iso2 = StringField(unique=True, required=True)
     dial_code = StringField()
-    priority = IntField()
+    priority = IntField(required=True)
     area_codes = ListField()
-    currency = ReferenceField(Currencies)
+    currency = ReferenceField(Currencies, reverse_delete_rule=NULLIFY)
 
     def to_dict(self, table_name=False):
         response = dict(id=str(self.id),
@@ -50,7 +52,7 @@ class Countries(Document):
                         dial_code=self.dial_code,
                         priority=self.priority,
                         area_codes=self.area_codes,
-                        currency=self.currency.name,
+                        currency=str(self.currency.name if self.currency is not None else None),
                         )
 
         return response
@@ -78,26 +80,26 @@ class LanguageTemplate(EmbeddedDocument):
 
 class Cities(Document):
     fields = {
-        'name': LanguageTemplate,
+        'name': str,
         'country_code': str,
         'default': bool,
         'active': str,
         'lat': int,
         'lng': int,
-        'language': str,
+        'language': LanguageTemplate,
         'number_phone': str,
         'exist_store': bool
     }
 
-    active = BooleanField()
+    active = BooleanField(default=True)
     country_code = StringField(required=True)
-    default = BooleanField()
-    name = EmbeddedDocumentField(LanguageTemplate)
+    default = BooleanField(default=False)
+    name = StringField(required=True)
     lat = IntField()
     lng = IntField()
-    language = StringField()
+    language = EmbeddedDocumentField(LanguageTemplate, required=True)
     number_phone = StringField()
-    exist_store = BooleanField()
+    exist_store = BooleanField(default=False)
 
     def to_dict(self, table_name=None):
         return {'name': self.name.get_created(),
@@ -196,7 +198,7 @@ class GroupsTemplates(Document):
         'g_type': str
     }
     name = StringField()
-    permissions = ListField(ReferenceField(Permissions))
+    permissions = ListField(ReferenceField(Permissions, reverse_delete_rule=PULL))
     g_type = StringField()
 
     def __str__(self):
@@ -274,10 +276,10 @@ class Groups(Document):
         'users': 'filter_users'
     }
 
-    users = ListField(ReferenceField(Users))
-    project = ReferenceField(Projects)
+    users = ListField(ReferenceField(Users, reverse_delete_rule=PULL))
+    project = ReferenceField(Projects, reverse_delete_rule=NULLIFY)
     name = StringField()
-    permissions = ListField(ReferenceField(Permissions))
+    permissions = ListField(ReferenceField(Permissions, reverse_delete_rule=PULL))
     g_type = StringField()
     is_owner = BooleanField()
 
@@ -291,18 +293,22 @@ class Groups(Document):
     def to_dict(self, table_name=False):
         response = dict(id=str(self.id), name=self.name,
                         project=str(self.project.id) if self.project else None,
-                        permissions=[perm.get_access for perm in self.permissions],
+                        permissions=[perm.get_access for perm in self.permissions if perm is not None],
                         g_type=self.g_type, is_owner=self.is_owner)
         if table_name:
             response.update({'table_name': 'groups'})
         return response
+
+    def delete(self, signal_kwargs=None, **write_concern):
+        super(Groups, self).delete(signal_kwargs, **write_concern)
+
 
 
 class UsersTokens(Document):
     fields = {'user': int,
               'token': str}
 
-    user = ReferenceField(Users)
+    user = ReferenceField(Users, reverse_delete_rule=NULLIFY)
     token = StringField()
 
     def __str__(self):

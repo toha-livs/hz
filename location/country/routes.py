@@ -1,8 +1,8 @@
 from falcon_core.routes import route
 
-from location.currency.resources import CurrenciesResource, CurrencyResource
+from location.country.resources import CountriesResource, CountryResource
 
 routes = [
-    route('/', CurrenciesResource()),
-    route('/{id}/', CurrencyResource()),
+    route('/', CountriesResource()),
+    route('/{id}/', CountryResource()),
 ]
