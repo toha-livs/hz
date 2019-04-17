@@ -1,7 +1,7 @@
 from mongoengine import *
 from datetime import datetime, time, date
 
-connect('tests1')
+connect('tests')
 
 
 class Currencies(Document):
@@ -26,7 +26,7 @@ class Countries(Document):
     dial_code = StringField()
     priority = IntField()
     area_codes = ListField()
-    currency = ReferenceField(Currencies)
+    currency = ReferenceField(Currencies, reverse_delete_rule=NULLIFY)
 
     def __str__(self):
         return f"<Currencies id={self.id}, name={self.name}, iso2={self.iso2}, currency={self.currency}>"
@@ -248,7 +248,7 @@ class Groups(Document):
     }
 
     users = ListField(ReferenceField(Users))
-    project = ReferenceField(Projects)
+    project = ReferenceField(Projects, reverse_delete_rule=NULLIFY)
     name = StringField()
     permissions = ListField(ReferenceField(Permissions))
     g_type = StringField()
@@ -275,7 +275,7 @@ class UsersTokens(Document):
     fields = {'user': int,
               'token': str}
 
-    user = ReferenceField(Users)
+    user = ReferenceField(Users, reverse_delete_rule=CASCADE)
     token = StringField()
 
     def __str__(self):

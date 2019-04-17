@@ -178,6 +178,8 @@ def delete_request(model: MODELS_UNION, resp: falcon.Response, **kwargs) -> None
     resp.status = falcon.HTTP_200
 
 
+
+
 def list_obj_to_serialize_format(list_obj: list, recurs: bool = False) -> List[dict]:
     """
     Convert objects to dict representation
