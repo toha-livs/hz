@@ -1,3 +1,5 @@
-from falcon_core.routes import route
+from falcon_core.routes import route, include
 
-routes = []
+routes = [
+    route('/users/', include('auth.users.routes')),
+]
