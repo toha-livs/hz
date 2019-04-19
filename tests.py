@@ -39,5 +39,5 @@ for index, user in enumerate(Users.objects.all(), 1):
 group1.save()
 group2.save()
 
-
-
+for user in Users.objects.all():
+    user.generate_token()

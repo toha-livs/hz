@@ -14,21 +14,6 @@ class Users(Document):
     date_created = DateTimeField()
     password = StringField()
 
-    to_dict = (
-        ('name', 'string'),
-        ('surname', 'string'),
-        ('email', 'string'),
-        ('tel', 'string'),
-        ('last_login', 'string'),
-        ('date_created', 'string'),
-        ('groups', 'objects', (
-            ('name', 'string'),
-            ('permissions', 'objects', (
-                ('name', 'string'),
-            )),
-        )),
-    )
-
     @property
     def groups(self):
         return Groups.objects.filter(users__in=[self.id])
@@ -38,8 +23,8 @@ class Users(Document):
         permissions = []
         for perms in groups.values_list('permissions'):
             permissions.extend(perms)
-        permissions = '__'.join([f'{perm.id}_{perm.get_access()}' for perm in permissions])
-        token = encrypt_sha256_with_secret_key(self.id + self.email + self.tel + self.password + permissions)
+        permissions = '__'.join([f'{perm.id}_{perm.get_access}' for perm in permissions])
+        token = encrypt_sha256_with_secret_key(str(self.id) + self.email + self.tel + self.password + permissions)
         user_token = UsersTokens.objects.filter(user=self).first()
         if user_token:
             user_token.token = token
@@ -47,7 +32,8 @@ class Users(Document):
         else:
             UsersTokens(user=self, token=token).save()
 
-    def get_token(self):
+    @property
+    def token(self):
         user_token = UsersTokens.objects.filter(user=self).first()
         if user_token:
             return user_token.token
@@ -74,11 +60,6 @@ class Permissions(Document):
     name = StringField()
     access = IntField(choices=ACCESSES.keys())
 
-    to_dict = (
-        ('name', 'string'),
-        ('get_access:access', 'string'),
-    )
-
     @property
     def get_access(self):
         return f'{self.name}_{self.ACCESSES[self.access]}'
@@ -91,12 +72,6 @@ class Groups(Document):
     name = StringField()
     users = ListField(ReferenceField(Users))
     permissions = ListField(ReferenceField(Permissions))
-
-    to_dict = (
-        ('name', 'string'),
-        ('users', 'objects'),
-        ('permissions', 'string'),
-    )
 
     def __repr__(self):
         return f'<{type(self).__name__} id={self.id}>'
