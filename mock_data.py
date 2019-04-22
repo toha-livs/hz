@@ -6,8 +6,8 @@ os.environ.setdefault('FALCON_SETTINGS_MODULE', 'gusto_api.settings')
 from gusto_api.utils import encrypt
 from gusto_api.models import (
     Users, Groups, Permissions,
-    UsersTokens, Projects, LanguageTemplate
-)
+    UsersTokens, Projects, LanguageTemplate,
+    Currencies, Countries)
 from auth.utils import generate_users_tokens_by_group
 
 
@@ -161,3 +161,4 @@ def fun():
 
 if __name__ == '__main__':
     fill_db()
+    fun()
