@@ -140,7 +140,7 @@ def fun():
         countries.append(country)
 
 #### anton
-def seed_cities():
+# def seed_cities():
     # currency1 = Currencies(name='Grivna', symbol='grn', code='380', rate=25, rates=27, last_update=datetime.datetime.now())
     # currency2 = Currencies(name='Dollar', symbol='usd', code='180', rate=1, rates=1,
     #                        last_update=datetime.datetime.now())
@@ -152,12 +152,12 @@ def seed_cities():
     # coutry1.save()
     # coutry2.save()
 
-    city1 = Cities(active=True, country_code='380', default=False, name='test1', lat=1.1213, lng=2.123, language={'en': 'test1'}, number_phone='325234123423', exist_store=True)
-    city2 = Cities(active=True, country_code='180', default=False, name='test2', lat=1.1213, lng=2.123,
-                   language={'ru': 'тест1'}, number_phone='3423', exist_store=False)
-    city1.save()
-    city2.save()
+    # city1 = Cities(active=True, country_code='380', default=False, name='test1', lat=1.1213, lng=2.123, language={'en': 'test1'}, number_phone='325234123423', exist_store=True)
+    # city2 = Cities(active=True, country_code='180', default=False, name='test2', lat=1.1213, lng=2.123,
+    #                language={'ru': 'тест1'}, number_phone='3423', exist_store=False)
+    # city1.save()
+    # city2.save()
 
 
 if __name__ == '__main__':
-    seed_cities()
+    fill_db()

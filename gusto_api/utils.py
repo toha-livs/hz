@@ -24,7 +24,6 @@ def encrypt(text: str) -> str:
     return hashlib.sha256(str(text + secret_key).encode()).hexdigest()
 
 
-
 def filter_queryset(queryset, **kwargs):
     offset, limit, order_by = kwargs.pop('offset', 0), kwargs.pop('limit', None), kwargs.pop('order_by', None)
 
