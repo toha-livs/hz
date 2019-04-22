@@ -22,7 +22,7 @@ class Currencies(Document):
     rate = IntField()
     rates = IntField()
     last_update = DateTimeField()
-    #
+
     def to_dict(self, table_name=False):
         return dict(id=str(self.id), name=self.name, symbol=self.symbol, code=self.code, rate=self.rate,
                     rates=self.rates, lastUpdate=datetime.timestamp(
@@ -151,7 +151,7 @@ class Projects(Document):
     }
     name = EmbeddedDocumentField(LanguageTemplate)
     domain = StringField(unique=True)
-    additional_domains = LineStringField()
+    additional_domains = ListField(StringField())
     address = EmbeddedDocumentListField(LanguageTemplate)
     logo = EmbeddedDocumentField(ImageTemplate)
     favicon = EmbeddedDocumentField(ImageTemplate)
@@ -174,7 +174,7 @@ class Projects(Document):
         return response
 
     def __str__(self):
-        return f"<Projects id={self.id}, domain={self.domain}, tel={self.address}>"
+        return f"<Projects id={self.id}, domain={self.domain}, tel={self.address}, additional_domains={self.additional_domains}>"
 
 
 class Permissions(Document):
@@ -208,7 +208,6 @@ class GroupsTemplates(Document):
         return f"<GroupTemplates id={self.id}, name={self.name}, permissions={self.permissions}>"
 
 
-
 class Users(Document):
     fields = {'name': str,
               'email': str,
@@ -238,6 +237,14 @@ class Users(Document):
     @property
     def groups(self):
         return Groups.objects.filter(users__in=[self.id])
+
+    @property
+    def get_last_login(self):
+        return datetime.timestamp(self.last_login)
+
+    @property
+    def get_date_created(self):
+        return datetime.timestamp(self.date_created)
 
     def generate_token(self):
         groups = Groups.objects.filter(users__in=[self.id])

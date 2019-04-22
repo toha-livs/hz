@@ -5,11 +5,11 @@ import time
 
 import falcon
 
-from auth.resources import Resource
-from gusto_api.models import Users, UsersTokens
+from falcon_core.resources import Resource
+from gusto_api.models import Users
 from gusto_api.utils import encrypt
-from auth.utils import generate_user_token, get_request_multiple, delete_request, get_request_single, post_create_user, \
-    list_obj_to_serialize_format
+from auth.utils import delete_request, post_create_user, encrypt_password
+from gusto_api.utils import filter_queryset, dict_from_model
 
 
 class UsersResource(Resource):
@@ -20,7 +20,12 @@ class UsersResource(Resource):
         GET all users
         url: users/
         """
-        get_request_multiple(Users, req.params, resp)
+
+        users = filter_queryset(Users.objects, **req.params)
+        resp.status = falcon.HTTP_OK
+        resp.media = dict_from_model(users, UserResource.users_dict_template, iterable=True)
+
+        # get_request_multiple(Users, req.params, resp)
 
     def on_post(self, req, resp, **kwargs):
         """
@@ -31,6 +36,25 @@ class UsersResource(Resource):
 
 
 class UserResource(Resource):
+
+    users_dict_template = (
+            ('id', 'string'),
+            ('name', 'string'),
+            ('email', 'string'),
+            ('tel', 'string'),
+            ('is_active', 'boolean'),
+            ('get_last_login:last_login', 'float'),
+            ('get_date_created:date_created', 'float'),
+            ('image', 'string'),
+            ('groups', 'objects', (
+                ('name', 'string'),
+                ('permissions', 'objects', (
+                    ('id', 'string'),
+                    ('get_access:access', 'string'),
+                ),),
+            ),)
+        )
+
     use_token = True
 
     def on_get(self, req, resp, **kwargs):
@@ -38,7 +62,12 @@ class UserResource(Resource):
         GET user by id
         url: users/{id}/
         """
-        get_request_single(Users, resp, **kwargs)
+        user = Users.objects.filter(id=kwargs['id']).first()
+        if user:
+            resp.status = falcon.HTTP_OK
+            resp.media = dict_from_model(user, self.users_dict_template)
+        else:
+            resp.status = falcon.HTTP_404
 
     def on_post(self, req, resp, **kwargs):
         """
@@ -75,7 +104,7 @@ class UserResource(Resource):
         same_fields = {x: data[x] for x in user.fields & data.keys()}
         if same_fields:
             user.update(**same_fields)
-            generate_user_token(user)
+            user.generate_token()
         resp.status = falcon.HTTP_200
 
     def on_delete(self, req, resp, **kwargs):
@@ -88,43 +117,22 @@ class UserResource(Resource):
 
 class LoginResource(Resource):
 
-    def on_post(self, req, resp, **kwargs):
+    def post(self, req, resp, data, **kwargs):
         """
         POST(login) user with given (email or telephone) and password and return user token
         url: users/login/
         """
-        try:
-            data = json.load(req.stream)
-        except json.JSONDecodeError:
-            resp.status = falcon.HTTP_400
-            return
 
-        if '@' in data.get('login'):
-            user = Users.objects.filter(email=data.get('login')).first()
+        if data.get('login') and data.get('password'):
+            user = Users.objects.filter(**{
+                ('tel', 'email')[int(bool('@' in data['login']))]: data.pop('login')
+            }).first()
+            if user and user.password == encrypt_password(user, data['password']):
+                resp.media = dict_from_model(user, UserResource.users_dict_template)
+            else:
+                raise falcon.HTTPUnauthorized
         else:
-            user = Users.objects.filter(tel=data.get('login')).first()
-
-        if user is None:
-            resp.status = falcon.HTTP_400
-            return
-
-        if user.password != encrypt(''.join((user.email, user.tel, data.get('password')))):
-            resp.status = falcon.HTTP_400
-            return
-
-        user.update(last_login=datetime.datetime.now())
-
-        token = UsersTokens.objects.filter(user=user).first()
-
-        if token is None:
-            resp.status = falcon.HTTP_400
-            return
-
-        user = list_obj_to_serialize_format([user], recurs=True)[0]
-        user['token'] = token.token
-        print(user)
-        resp.media = user
-        resp.status = falcon.HTTP_200
+            raise falcon.HTTPBadRequest
 
 
 class RegistrationResource(Resource):

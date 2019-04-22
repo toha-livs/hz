@@ -19,7 +19,6 @@ class UsersLoginResource(Resource):
                 resp.media = dict_from_obj(user, (
                     ('id', 'string'),
                     ('name', 'string'),
-                    ('surname', 'string'),
                     ('email', 'string'),
                     ('tel', 'string'),
                     ('last_login', 'string'),

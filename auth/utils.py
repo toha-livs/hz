@@ -16,7 +16,7 @@ import requests
 
 from mongoengine import Q
 
-from gusto_api.utils import encrypt
+from gusto_api.utils import encrypt, dict_from_model
 from gusto_api.models import Groups, Users, UsersTokens, Projects, Currencies, Countries, Cities
 
 MODELS_UNION = Union[Type[Users], Type[Groups], Type[Projects], Type[Currencies], Type[Countries], Type[Cities]]
@@ -149,9 +149,24 @@ def post_create_user(req: falcon.Request, resp: falcon.Response) -> None:
     user.last_login = datetime.now()
     user.is_active = True
     user.save()
-
-    generate_user_token(user)
-    resp.media = user.to_dict()
+    user.generate_token()
+    # generate_user_token(user)
+    resp.media = dict_from_model(user, (
+        ('id', 'string'),
+        ('name', 'string'),
+        ('email', 'string'),
+        ('tel', 'string'),
+        ('get_last_login:last_login', 'float'),
+        ('get_date_created:date_created', 'float'),
+        ('token', 'string'),
+        ('groups', 'objects', (
+            ('name', 'string'),
+            ('permissions', 'objects', (
+                ('id', 'string'),
+                ('get_access:access', 'string'),
+            )),
+        )),
+    ))
     resp.status = falcon.HTTP_201
 
 
@@ -302,6 +317,7 @@ def send_files_to_file_server(files, response: falcon.Response, field=None, url=
         return
     response.status = str(rp.status_code)
     return rp.text
+
 
 def encrypt_password(user, password):
     return encrypt_sha256_with_secret_key(user.email + user.tel + password)

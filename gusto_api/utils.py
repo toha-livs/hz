@@ -41,7 +41,7 @@ def filter_queryset(queryset, **kwargs):
 
 
 def dict_from_model(queryset, data, iterable=False):
-    try:
-        return dict_from_obj(queryset, data, iterable)
-    except Exception:
-        raise HTTPBadRequest
+    # try:
+    return dict_from_obj(queryset, data, iterable)
+    # except Exception:
+    #     raise HTTPBadRequest

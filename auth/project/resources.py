@@ -5,6 +5,7 @@ from falcon_core.resources import Resource
 
 from gusto_api.models import Projects, Groups
 from auth.utils import get_request_single, delete_request
+from gusto_api.utils import dict_from_model
 
 
 class ProjectResource(Resource):
@@ -18,9 +19,26 @@ class ProjectResource(Resource):
         if kwargs.get('group_id'):
             group_id = kwargs.pop('group_id', None)
             kwargs['id'] = Groups.objects.filter(id=group_id).first().project.id
-            get_request_single(Projects, resp, **kwargs)
-        kwargs['id'] = kwargs.pop('id', None)
-        get_request_single(Projects, resp, **kwargs)
+        resp.status = falcon.HTTP_OK
+        resp.media = dict_from_model(Projects.objects.filter(id=kwargs.get('id')).first(), (
+                ('id', 'string'),
+                ('domain', 'string'),
+                ('additional_domains', 'list'),
+                ('address', 'objects', (
+                    ('en', 'string'),
+                    ('ru', 'string'),
+                    ('uk', 'string'),
+                )),
+                ('logo', 'string'),
+                ('favicon', 'string'),
+                ('name', 'object', (
+                    ('en', 'string'),
+                    ('ru', 'string'),
+                    ('uk', 'string'),
+                )),
+        ))
+
+        # get_request_single(Projects, resp, **kwargs)
 
     def on_post(self, req, resp, **kwargs):
         """
@@ -45,7 +63,23 @@ class ProjectResource(Resource):
             resp.body = 'Error on commit.'
             resp.status = falcon.HTTP_400
             return
-        resp.media = new_project.to_dict()
+        resp.media = dict_from_model(new_project, (
+            ('id', 'string'),
+            ('domain', 'string'),
+            ('additional_domains', 'list'),
+            ('address', 'objects', (
+                ('en', 'string'),
+                ('ru', 'string'),
+                ('uk', 'string'),
+            )),
+            ('logo', 'string'),
+            ('favicon', 'string'),
+            ('name', 'object', (
+                ('en', 'string'),
+                ('ru', 'string'),
+                ('uk', 'string'),
+            )),
+        ))
         resp.status = falcon.HTTP_201
 
     def on_put(self, req, resp, **kwargs):
