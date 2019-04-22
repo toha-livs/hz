@@ -4,12 +4,15 @@ from typing import Union, List, Type
 from datetime import datetime
 from json.decoder import JSONDecodeError
 
+from falcon_core.utils import encrypt_sha256_with_secret_key
+
+
+
 import falcon
 import unidecode
 import requests
 
 from mongoengine import Q
-from falcon_core.config import settings
 
 from gusto_api.utils import encrypt
 from gusto_api.models import Groups, Users, UsersTokens, Projects, Currencies, Countries, Cities
@@ -236,3 +239,12 @@ def send_files_to_file_server(request: falcon.Request, response: falcon.Response
                 response.status = falcon.HTTP_400
                 break
             response.status = str(rp.status_code)
+
+
+
+def encrypt_password(user, password):
+    return encrypt_sha256_with_secret_key(user.email + user.tel + password)
+
+
+def get_user_token(token):
+    return UsersTokens.objects.filter(token=token).first()

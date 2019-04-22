@@ -1,4 +1,5 @@
 from mongoengine import *
+<<<<<<< HEAD
 from datetime import datetime, time, date
 
 connect('tests')
@@ -19,7 +20,7 @@ class Currencies(Document):
     rate = IntField()
     rates = IntField()
     last_update = DateTimeField()
-
+    #
     def to_dict(self, table_name=False):
         return dict(id=str(self.id), name=self.name, symbol=self.symbol, code=self.code, rate=self.rate,
                     rates=self.rates, lastUpdate=datetime.timestamp(
@@ -205,58 +206,6 @@ class GroupsTemplates(Document):
         return f"<GroupTemplates id={self.id}, name={self.name}, permissions={self.permissions}>"
 
 
-class Users(Document):
-    fields = {'name': str,
-              'email': str,
-              'password': str,
-              'last_login': int,
-              'is_active': bool,
-              'image': str,
-              'tel': str}
-
-    temp_fields = [
-        'groups'
-    ]
-
-    filters = {
-        'groups': 'filter_groups'
-    }
-
-    name = StringField()
-    email = EmailField()
-    password = StringField()
-    last_login = DateTimeField()
-    date_created = DateTimeField()
-    is_active = BooleanField()
-    image = StringField()
-    tel = StringField(max_length=24)
-
-    @property
-    def groups(self):
-        return Groups.objects.filter(users__in=[self])
-
-    @property
-    def get_token(self):
-        return UsersTokens.objects.filter(user=self).first()
-
-    @staticmethod
-    def filter_groups(**kwargs):
-        return Groups.objects.filter(**kwargs).all()
-
-    def to_dict(self, table_name=False):
-        response = dict(id=str(self.id), name=self.name, email=self.email,
-                        last_login=datetime.timestamp(self.last_login),
-                        date_created=datetime.timestamp(datetime.combine(self.date_created, time.min)),
-                        is_active=self.is_active, image=self.image, tel=self.tel)
-        if table_name:
-            response.update({'table_name': 'users'})
-        return response
-
-    def groups_values(self, col_name):
-        return self.groups.values_list(col_name)
-
-    def __str__(self):
-        return f"<Users id={self.id}, email={self.email}, tel={self.tel}>"
 
 
 class Groups(Document):
@@ -309,3 +258,81 @@ class UsersTokens(Document):
 
     def __str__(self):
         return f"<Group id={self.id}, user={self.user}, token={self.token}>"
+=======
+
+from falcon_core.utils import encrypt_sha256_with_secret_key
+
+connect('gusto_api')
+
+
+class Users(Document):
+    name = StringField()
+    surname = StringField()
+    email = EmailField(unique=True, required=True)
+    tel = StringField(unique=True, required=True)
+    last_login = DateTimeField()
+    date_created = DateTimeField()
+    password = StringField()
+
+    @property
+    def groups(self):
+        return Groups.objects.filter(users__in=[self.id])
+
+    def generate_token(self):
+        groups = Groups.objects.filter(users__in=[self.id])
+        permissions = []
+        for perms in groups.values_list('permissions'):
+            permissions.extend(perms)
+        permissions = '__'.join([f'{perm.id}_{perm.get_access}' for perm in permissions])
+        token = encrypt_sha256_with_secret_key(str(self.id) + self.email + self.tel + self.password + permissions)
+        user_token = UsersTokens.objects.filter(user=self).first()
+        if user_token:
+            user_token.token = token
+            user_token.save()
+        else:
+            UsersTokens(user=self, token=token).save()
+
+    @property
+    def token(self):
+        user_token = UsersTokens.objects.filter(user=self).first()
+        if user_token:
+            return user_token.token
+        return None
+
+    def __repr__(self):
+        return f'<{type(self).__name__} id={self.id}>'
+
+
+class UsersTokens(Document):
+    user = ReferenceField(Users)
+    token = StringField()
+
+    def __repr__(self):
+        return f'<{type(self).__name__} id={self.id}>'
+
+
+class Permissions(Document):
+    ACCESSES = {
+        0: 'r',
+        1: 'w',
+    }
+
+    name = StringField()
+    access = IntField(choices=ACCESSES.keys())
+
+    @property
+    def get_access(self):
+        return f'{self.name}_{self.ACCESSES[self.access]}'
+
+    def __repr__(self):
+        return f'<{type(self).__name__} id={self.id}>'
+
+
+class Groups(Document):
+    name = StringField()
+    users = ListField(ReferenceField(Users))
+    permissions = ListField(ReferenceField(Permissions))
+
+    def __repr__(self):
+        return f'<{type(self).__name__} id={self.id}>'
+>>>>>>> 4cf40415a257099d55a6efd67d0a7c2dad393856

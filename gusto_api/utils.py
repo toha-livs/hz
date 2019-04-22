@@ -2,6 +2,10 @@ import os
 import hashlib
 from importlib import import_module
 
+from falcon import HTTPBadRequest
+
+from falcon_core.utils import dict_from_obj
+
 os.environ.setdefault('FALCON_SETTINGS_MODULE', 'gusto_api.settings')
 
 
@@ -18,3 +22,27 @@ def encrypt(text: str) -> str:
     """
     secret_key = import_module(os.environ.get('FALCON_SETTINGS_MODULE')).SECRET_KEY
     return hashlib.sha256(str(text + secret_key).encode()).hexdigest()
+
+
+
+def filter_queryset(queryset, **kwargs):
+    offset, limit, order_by = kwargs.pop('offset', 0), kwargs.pop('limit', None), kwargs.pop('order_by', None)
+
+    queryset = queryset.filter(**kwargs)
+
+    queryset = queryset.skip(int(offset))
+
+    if limit:
+        queryset = queryset.limit(int(limit))
+
+    if order_by:
+        queryset = queryset.order_by(order_by)
+
+    return queryset
+
+
+def dict_from_model(queryset, data, iterable=False):
+    try:
+        return dict_from_obj(queryset, data, iterable)
+    except Exception:
+        raise HTTPBadRequest
