@@ -1,3 +1,8 @@
 from falcon_core.routes import route
 
-routes = []
+from location.country.resources import CountriesResource, CountryResource
+
+routes = [
+    route('/', CountriesResource()),
+    route('/{id}/', CountryResource()),
+]

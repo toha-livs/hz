@@ -108,27 +108,56 @@ def update_user_tokens():
         generate_users_tokens_by_group(group)
 
 
+def fun():
+    currencies_amount = 10
+    currencies = []
+    counter = 0
+    for i in range(currencies_amount):
+        counter += 1
+        curr = Currencies(
+            name="curr_" + str(counter),
+            symbol="symbol_" + str(counter),
+            code="code_" + str(counter),
+            rate=counter,
+            rates=counter,
+            last_update=datetime.datetime.now(),
+        )
+        curr.save()
+        currencies.append(curr)
+    print(currencies)
+    countries_amount = 10
+    counter = 0
+    countries = []
+    for i in range(countries_amount):
+        counter += 1
+        country = Countries(name='country_' + str(counter),
+                            iso2='iso2' + str(counter),
+                            dial_code='dial_code' + str(counter),
+                            priority=counter,
+                            currency=currencies[i]
+                            )
+        country.save()
+        countries.append(country)
+
 #### anton
-# def seed_cities():
-#     # currency1 = Currencies(name='Grivna', symbol='grn', code='380', rate=25, rates=27, last_update=datetime.datetime.now())
-#     # currency2 = Currencies(name='Dollar', symbol='usd', code='180', rate=1, rates=1,
-#     #                        last_update=datetime.datetime.now())
-#     # currency1.save()
-#     # currency2.save()
-#     #
-#     # coutry1 = Countries(name='Ukraine', iso2='380', dial_code='test1', priority=1, area_codes=[1, 2], currency=currency1)
-#     # coutry2 = Countries(name='USA', iso2='180', dial_code='test2', priority=2, area_codes=[3, 1], currency=currency2)
-#     # coutry1.save()
-#     # coutry2.save()
-#
-#     city1 = Cities(active=True, country_code='380', default=False, name={'en': 'test1'}, lat=1.1213, lng=2.123, language='test1', number_phone='325234123423', exist_store=True)
-#     city2 = Cities(active=True, country_code='180', default=False, name={'ru': 'тест1'}, lat=1.1213, lng=2.123,
-#                    language='test1', number_phone='3423', exist_store=False)
-#     city1.save()
-#     city2.save()
-    # for i in range(5):
-    #     city = Cities(active=True, )
+def seed_cities():
+    # currency1 = Currencies(name='Grivna', symbol='grn', code='380', rate=25, rates=27, last_update=datetime.datetime.now())
+    # currency2 = Currencies(name='Dollar', symbol='usd', code='180', rate=1, rates=1,
+    #                        last_update=datetime.datetime.now())
+    # currency1.save()
+    # currency2.save()
+    #
+    # coutry1 = Countries(name='Ukraine', iso2='380', dial_code='test1', priority=1, area_codes=[1, 2], currency=currency1)
+    # coutry2 = Countries(name='USA', iso2='180', dial_code='test2', priority=2, area_codes=[3, 1], currency=currency2)
+    # coutry1.save()
+    # coutry2.save()
+
+    city1 = Cities(active=True, country_code='380', default=False, name='test1', lat=1.1213, lng=2.123, language={'en': 'test1'}, number_phone='325234123423', exist_store=True)
+    city2 = Cities(active=True, country_code='180', default=False, name='test2', lat=1.1213, lng=2.123,
+                   language={'ru': 'тест1'}, number_phone='3423', exist_store=False)
+    city1.save()
+    city2.save()
 
 
 if __name__ == '__main__':
-    fill_db()
+    seed_cities()

@@ -12,9 +12,9 @@ from mongoengine import Q
 from falcon_core.config import settings
 
 from gusto_api.utils import encrypt
-from gusto_api.models import Groups, Users, UsersTokens, Projects
+from gusto_api.models import Groups, Users, UsersTokens, Projects, Currencies, Countries, Cities
 
-MODELS_UNION = Union[Type[Users], Type[Groups], Type[Projects]]
+MODELS_UNION = Union[Type[Users], Type[Groups], Type[Projects], Type[Currencies], Type[Countries], Type[Cities]]
 
 
 def get_request_multiple(model: MODELS_UNION, params: dict, resp: falcon.Response) -> None:
@@ -72,7 +72,6 @@ def get_request_single(model: MODELS_UNION, resp: falcon.Response, **kwargs) -> 
     if model_instance is None:
         resp.status = falcon.HTTP_400
         return
-
     resp.media = list_obj_to_serialize_format([model_instance], recurs=True)[0]
     resp.status = falcon.HTTP_200
 
@@ -175,9 +174,7 @@ def delete_request(model: MODELS_UNION, resp: falcon.Response, **kwargs) -> None
 
     model_instance.delete()
 
-    resp.status = falcon.HTTP_200
-
-
+    resp.status = falcon.HTTP_204
 
 
 def list_obj_to_serialize_format(list_obj: list, recurs: bool = False) -> List[dict]:

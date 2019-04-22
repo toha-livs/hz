@@ -2,7 +2,7 @@ import falcon
 from mongoengine.errors import ValidationError
 from auth.resources import Resource
 from auth.utils import get_request_multiple, get_request_single, delete_request
-from gusto_api.models import Cities
+from gusto_api.models import Cities, Permissions
 
 
 class CitiesResource(Resource):
@@ -10,6 +10,8 @@ class CitiesResource(Resource):
     use_token = True
 
     def on_get(self, req, resp, **kwargs):
+        # city = Permissions.objects.all().first()
+        # print(city._meta['collection'])
         get_request_multiple(Cities, req.params, resp)
         resp.status = falcon.HTTP_200
 
