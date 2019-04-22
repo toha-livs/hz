@@ -4,7 +4,7 @@ from falcon_core.resources import Resource
 from falcon_core.utils import dict_from_obj
 
 from gusto_api.models import Users
-from gusto_api.utils import filter_queryset
+from gusto_api.utils import filter_queryset, dict_from_model
 
 from auth.utils import encrypt_password
 
@@ -13,7 +13,7 @@ class UsersLoginResource(Resource):
     def post(self, req, resp, data, **kwargs):
         if data.get('login') and data.get('password'):
             user = Users.objects.filter(**{
-                ('tel', 'email')[int('@' in data['login'])]: data.pop('login')
+                ('tel', 'email')[int(bool('@' in data['login']))]: data.pop('login')
             }).first()
             if user and user.password == encrypt_password(user, data['password']):
                 resp.media = dict_from_obj(user, (
@@ -46,31 +46,32 @@ class UsersResource(Resource):
         if kwargs.get('id'):
             users = Users.objects.filter(id=kwargs['id']).first()
         else:
-            users = filter_queryset(Users.objects, req)
+            users = filter_queryset(Users.objects, **req.params)
 
         resp.status = falcon.HTTP_OK
-        resp.media = dict_from_obj(users, (
+        resp.media = dict_from_model(users, (
             ('id', 'string'),
             ('name', 'string'),
             ('surname', 'string'),
             ('email', 'string'),
             ('tel', 'string'),
-        ))
+            ('groups', 'string'),
+        ), iterable=not bool(kwargs.get('id')))
 
     def post(self, req, resp, data, **kwargs):
         if not kwargs.get('id'):
             pass
         else:
-            raise falcon.HTTPBadRequest
+            raise falcon.HTTPNotFound
 
     def put(self, req, resp, data, **kwargs):
         if kwargs.get('id'):
             pass
         else:
-            raise falcon.HTTPBadRequest
+            raise falcon.HTTPNotFound
 
     def delete(self, req, resp, data, **kwargs):
         if kwargs.get('id'):
-            pass
+            Users.objects.filter(id=kwargs['id']).first().delete()
         else:
-            raise falcon.HTTPBadRequest
+            raise falcon.HTTPNotFound
