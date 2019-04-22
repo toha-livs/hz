@@ -3,18 +3,23 @@ import json
 
 from typing import Union, List, Type
 from datetime import datetime
+from json.decoder import JSONDecodeError
+
+from falcon_core.utils import encrypt_sha256_with_secret_key
+from falcon_core.config import settings
+
+
 
 import falcon
 import unidecode
 import requests
 
 from mongoengine import Q
-from falcon_core.config import settings
 
 from gusto_api.utils import encrypt
-from gusto_api.models import Groups, Users, UsersTokens, Projects
+from gusto_api.models import Groups, Users, UsersTokens, Projects, Currencies, Countries, Cities
 
-MODELS_UNION = Union[Type[Users], Type[Groups], Type[Projects]]
+MODELS_UNION = Union[Type[Users], Type[Groups], Type[Projects], Type[Currencies], Type[Countries], Type[Cities]]
 
 
 def get_request_multiple(model: MODELS_UNION, params: dict, resp: falcon.Response) -> None:
@@ -68,6 +73,7 @@ def get_request_single(model: MODELS_UNION, resp: falcon.Response, **kwargs) -> 
     else:
         resp.status = falcon.HTTP_400
         return
+
     if model_instance is None:
         resp.status = falcon.HTTP_400
         return
@@ -139,17 +145,12 @@ def post_create_user(req: falcon.Request, resp: falcon.Response) -> None:
     user = Users(**data)
     user.password = encrypt(user.email + user.tel + user.password)
 
-    # with open(images['name'], 'wb') as f:
-    #     f.write(bytes(images['content'], 'utf-8'))
-
     user.date_created = datetime.now()
     user.last_login = datetime.now()
     user.is_active = True
-    # user.image = send_files_to_file_server(req, resp, 'image', 'image/')
-    # print(user.image)
     user.save()
 
-    # generate_user_token(user)
+    generate_user_token(user)
     resp.media = user.to_dict()
     resp.status = falcon.HTTP_201
 
@@ -212,7 +213,7 @@ def delete_request(model: MODELS_UNION, resp: falcon.Response, **kwargs) -> None
 
     model_instance.delete()
 
-    resp.status = falcon.HTTP_200
+    resp.status = falcon.HTTP_204
 
 
 def list_obj_to_serialize_format(list_obj: list, recurs: bool = False) -> List[dict]:
@@ -301,3 +302,10 @@ def send_files_to_file_server(files, response: falcon.Response, field=None, url=
         return
     response.status = str(rp.status_code)
     return rp.text
+
+def encrypt_password(user, password):
+    return encrypt_sha256_with_secret_key(user.email + user.tel + password)
+
+
+def get_user_token(token):
+    return UsersTokens.objects.filter(token=token).first()
