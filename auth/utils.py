@@ -68,7 +68,6 @@ def get_request_single(model: MODELS_UNION, resp: falcon.Response, **kwargs) -> 
     else:
         resp.status = falcon.HTTP_400
         return
-
     if model_instance is None:
         resp.status = falcon.HTTP_400
         return
@@ -117,75 +116,79 @@ def generate_users_tokens_by_group(group: Groups):
         generate_user_token(user)
 
 
-# def post_create_user(req: falcon.Request, resp: falcon.Response) -> None:
-#     """
-#     Create user. Handler for HTTP POST request on users/login/ and /users/
-#     :param req: instance of falcon.Request class
-#     :param resp: instance of falcon.Response class
-#     """
-#     form = cgi.FieldStorage(fp=req.stream, environ=req.env)
-#     print(form['tel'].value)
-#     try:
-#         data = falcon.json.load(req.stream)
-#     except JSONDecodeError:
-#         resp.status = falcon.HTTP_400
-#         return
-#
-#     if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
-#         resp.status = falcon.HTTP_400
-#         resp.body = 'user is already present'
-#         return
-#
-#     user = Users(**data)
-#
-#     user.password = encrypt(user.email + user.tel + user.password)
-#
-#     user.date_created = datetime.now()
-#     user.last_login = datetime.now()
-#     user.is_active = True
-#     user.image = send_files_to_file_server(req, resp, 'image', 'image/')
-#     print(user.image)
-#     user.save()
-#
-#     generate_user_token(user)
-#     resp.media = user.to_dict()
-#     resp.status = falcon.HTTP_201
-
-# NEW!!!!!
 def post_create_user(req: falcon.Request, resp: falcon.Response) -> None:
     """
     Create user. Handler for HTTP POST request on users/login/ and /users/
     :param req: instance of falcon.Request class
     :param resp: instance of falcon.Response class
     """
-    data = cgi.FieldStorage(fp=req.stream, environ=req.env)
+    try:
+        data = falcon.json.load(req.stream)
+    except json.JSONDecodeError as e:
+        print(e)
+        resp.status = falcon.HTTP_400
+        return
 
-    if Users.objects.filter((Q(email=data['email'].value) or (Q(tel=data['tel'].value)))):
+    if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
         resp.status = falcon.HTTP_400
         resp.body = 'user is already present'
         return
 
-    data_keys = data.keys()
-    data_keys.remove('images')
-    new_d = {x: data[x].value for x in data_keys}
-    user = Users(**new_d)
+    images = data.pop('images', None)
 
+    user = Users(**data)
     user.password = encrypt(user.email + user.tel + user.password)
+
+    # with open(images['name'], 'wb') as f:
+    #     f.write(bytes(images['content'], 'utf-8'))
 
     user.date_created = datetime.now()
     user.last_login = datetime.now()
     user.is_active = True
-    try:
-        images = json.loads(send_files_to_file_server(data['images'], resp, 'images', 'images/'))
-    except json.JSONDecodeError as e:
-        print(e)
-        images = {}
+    # user.image = send_files_to_file_server(req, resp, 'image', 'image/')
+    # print(user.image)
+    user.save()
 
-    user.image = req.forwarded_prefix + "/" + images.get('image', '')
-    # user.save()
     # generate_user_token(user)
     resp.media = user.to_dict()
     resp.status = falcon.HTTP_201
+
+
+# NEW!!!!!
+# def post_create_user(req: falcon.Request, resp: falcon.Response) -> None:
+#     """
+#     Create user. Handler for HTTP POST request on users/login/ and /users/
+#     :param req: instance of falcon.Request class
+#     :param resp: instance of falcon.Response class
+#     """
+#     data = cgi.FieldStorage(fp=req.stream, environ=req.env)
+#
+#     if Users.objects.filter((Q(email=data['email'].value) or (Q(tel=data['tel'].value)))):
+#         resp.status = falcon.HTTP_400
+#         resp.body = 'user is already present'
+#         return
+#
+#     data_keys = data.keys()
+#     data_keys.remove('images')
+#     new_d = {x: data[x].value for x in data_keys}
+#     user = Users(**new_d)
+#
+#     user.password = encrypt(user.email + user.tel + user.password)
+#
+#     user.date_created = datetime.now()
+#     user.last_login = datetime.now()
+#     user.is_active = True
+#     try:
+#         images = json.loads(send_files_to_file_server(data['images'], resp, 'images', 'images/'))
+#     except json.JSONDecodeError as e:
+#         print(e)
+#         images = {}
+#
+#     user.image = req.forwarded_prefix + "/" + images.get('image', '')
+#     # user.save()
+#     # generate_user_token(user)
+#     resp.media = user.to_dict()
+#     resp.status = falcon.HTTP_201
 
 
 def delete_request(model: MODELS_UNION, resp: falcon.Response, **kwargs) -> None:

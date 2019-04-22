@@ -63,15 +63,18 @@ class UserResource(Resource):
             resp.status = falcon.HTTP_400
             return
 
-        if data.get('password'):
-            resp.status = falcon.HTTP_400
-            resp.body = 'password is not changeable'
-            return
+        if not data.get('password'):
+            data.pop('password', None)
+        else:
+            data['password'] = encrypt(user.email + user.tel + data['password'])
+
+        if not data.get('last_login'):
+            data.pop('last_login', None)
 
         same_fields = {x: data[x] for x in user.fields & data.keys()}
-        user.update(**same_fields)
-
-        generate_user_token(user)
+        if same_fields:
+            user.update(**same_fields)
+            generate_user_token(user)
         resp.status = falcon.HTTP_200
 
     def on_delete(self, req, resp, **kwargs):
@@ -117,8 +120,20 @@ class LoginResource(Resource):
             return
 
         user = list_obj_to_serialize_format([user], recurs=True)[0]
-
         user['token'] = token.token
-
+        print(user)
         resp.media = user
         resp.status = falcon.HTTP_200
+
+
+class RegistrationResource(Resource):
+
+    def on_post(self, request, response, **kwargs):
+        try:
+            print(json.load(request.stream))
+        except json.JSONDecodeError as e:
+            print(e)
+            print(request.stream)
+
+        response.status = falcon.HTTP_200
+        response.media = {'status': 'OK'}

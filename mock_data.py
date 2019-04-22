@@ -109,4 +109,7 @@ def update_user_tokens():
 
 
 if __name__ == '__main__':
-    fill_db()
+    # fill_db()
+    # print(encrypt('email1@example.com'+'tel1'+'user1'))
+    for i in (Users.objects.filter(name='user1').first().groups):
+        print(i)

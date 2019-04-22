@@ -1,5 +1,7 @@
-from mongoengine import *
+import time
 from datetime import datetime, time
+
+from mongoengine import *
 
 connect('tests')
 
@@ -161,7 +163,8 @@ class Groups(Document):
         'name': str,
         'permissions': list,
         'g_type': str,
-        'is_owner': bool
+        'is_owner': bool,
+        'project': str
     }
 
     temp_fields = [
@@ -189,7 +192,7 @@ class Groups(Document):
     def to_dict(self, table_name=False):
         response = dict(id=str(self.id), name=self.name,
                         project=str(self.project.id) if self.project else None,
-                        permissions=[perm.get_access for perm in self.permissions],
+                        permissions=[{'id': str(perm.id), 'access': perm.get_access} for perm in self.permissions],
                         g_type=self.g_type, is_owner=self.is_owner)
         if table_name:
             response.update({'table_name': 'groups'})
@@ -197,11 +200,27 @@ class Groups(Document):
 
 
 class UsersTokens(Document):
-    fields = {'user': int,
-              'token': str}
+    fields = {
+        'user': int,
+        'token': str
+    }
 
     user = ReferenceField(Users)
     token = StringField()
 
     def __str__(self):
         return f"<Group id={self.id}, user={self.user}, token={self.token}>"
+
+
+class SMS(Document):
+    fields = {
+        'tel': str,
+        'code': str,
+        'created': float,
+        'expire': float
+    }
+
+    tel = StringField()
+    code = StringField()
+    created = DecimalField()
+    expire = DecimalField()

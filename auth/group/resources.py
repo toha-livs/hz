@@ -47,7 +47,11 @@ class GroupResource(Resource):
         GET group by id
         url: groups/{id}/
         """
-        get_request_single(Groups, resp, **kwargs)
+        if kwargs.get('id'):
+            get_request_single(Groups, resp, **kwargs)
+        else:
+            kwargs['project'] = kwargs.pop('project_id')
+            get_request_multiple(Groups, kwargs, resp)
 
     def on_put(self, req, resp, **kwargs):
         """

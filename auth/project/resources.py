@@ -15,8 +15,12 @@ class ProjectResource(Resource):
         get project by group id
         url: projects/{group_id}/
         """
-        kwargs['group_id'] = kwargs.pop('id', None)
-        get_request_single(Groups, resp, **kwargs)
+        if kwargs.get('group_id'):
+            group_id = kwargs.pop('group_id', None)
+            kwargs['id'] = Groups.objects.filter(id=group_id).first().project.id
+            get_request_single(Projects, resp, **kwargs)
+        kwargs['id'] = kwargs.pop('id', None)
+        get_request_single(Projects, resp, **kwargs)
 
     def on_post(self, req, resp, **kwargs):
         """
