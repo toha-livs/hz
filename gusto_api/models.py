@@ -3,7 +3,6 @@ from datetime import datetime, time, date
 
 from falcon_core.utils import encrypt_sha256_with_secret_key
 
-
 connect('tests')
 
 
@@ -294,23 +293,14 @@ class Groups(Document):
     name = StringField()
     permissions = ListField(ReferenceField(Permissions, reverse_delete_rule=PULL))
     g_type = StringField()
-    is_owner = BooleanField()
+    is_owner = BooleanField(default=False)
 
-    @staticmethod
-    def filter_users(**kwargs):
-        return Users.objects.filter(**kwargs).all()
+    # @staticmethod
+    # def filter_users(**kwargs):
+    #     return Users.objects.filter(**kwargs).all()
 
     def __str__(self):
         return f"<Group id={self.id}, users={self.users}, project={self.project}>"
-
-    def to_dict(self, table_name=False):
-        response = dict(id=str(self.id), name=self.name,
-                        project=str(self.project.id) if self.project else None,
-                        permissions=[perm.get_access for perm in self.permissions],
-                        g_type=self.g_type, is_owner=self.is_owner)
-        if table_name:
-            response.update({'table_name': 'groups'})
-        return response
 
 
 class UsersTokens(Document):

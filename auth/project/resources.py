@@ -99,8 +99,13 @@ class ProjectResource(Resource):
                 return
 
             update_data = json.loads(req.stream.read())
+            # if update_data.get('additional_domains', False):
+            #     temp = update_data.pop('additional_domains')
+            #     print(temp)
             project.update(**update_data)
-
+            # project.additional_domains = temp
+            print(project.additional_domains)
+            # project.save()
             resp.status = falcon.HTTP_200
         except Exception as e:
             print(e)
