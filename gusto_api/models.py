@@ -1,5 +1,5 @@
 from mongoengine import *
-from datetime import datetime, time, date
+from datetime import datetime, time
 
 from falcon_core.utils import encrypt_sha256_with_secret_key
 
@@ -19,13 +19,17 @@ class Currencies(Document):
     symbol = StringField(required=True)
     code = StringField(unique=True, required=True)
     rate = IntField()
-    rates = IntField()
+    rates = ListField()
     last_update = DateTimeField()
 
     def to_dict(self, table_name=False):
         return dict(id=str(self.id), name=self.name, symbol=self.symbol, code=self.code, rate=self.rate,
                     rates=self.rates, lastUpdate=datetime.timestamp(
                 datetime.combine(self.last_update, time.min))) if self.last_update is not None else None
+
+    @property
+    def get_last_update(self):
+        return datetime.timestamp(self.last_update)
 
     def __str__(self):
         return f"<Currencies id={self.id}, name={self.name}, symbol={self.symbol}, code={self.code}>"
@@ -294,10 +298,6 @@ class Groups(Document):
     permissions = ListField(ReferenceField(Permissions, reverse_delete_rule=PULL))
     g_type = StringField()
     is_owner = BooleanField(default=False)
-
-    # @staticmethod
-    # def filter_users(**kwargs):
-    #     return Users.objects.filter(**kwargs).all()
 
     def __str__(self):
         return f"<Group id={self.id}, users={self.users}, project={self.project}>"

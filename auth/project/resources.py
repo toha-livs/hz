@@ -4,7 +4,7 @@ import falcon
 from falcon_core.resources import Resource
 
 from gusto_api.models import Projects, Groups
-from auth.utils import get_request_single, delete_request
+from auth.utils import delete_request
 from gusto_api.utils import dict_from_model
 
 

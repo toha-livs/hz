@@ -1,8 +1,4 @@
-import cgi
 import json
-import datetime
-import time
-
 import falcon
 
 from falcon_core.resources import Resource
@@ -24,8 +20,6 @@ class UsersResource(Resource):
         users = filter_queryset(Users.objects, **req.params)
         resp.status = falcon.HTTP_OK
         resp.media = dict_from_model(users, UserResource.users_dict_template, iterable=True)
-
-        # get_request_multiple(Users, req.params, resp)
 
     def on_post(self, req, resp, **kwargs):
         """
