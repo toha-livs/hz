@@ -1,8 +1,7 @@
 from falcon_core.resources import Resource
-from auth.utils import get_request_multiple, get_request_single, delete_request
-from gusto_api.models import Countries, Currencies
+from gusto_api.models import  Currencies
 import falcon
-import json, datetime
+import datetime
 
 from gusto_api.utils import filter_queryset, dict_from_model
 
@@ -47,7 +46,8 @@ class CurrencyResource(Resource):
         ('rates', 'list'),
         ('get_last_update:last_update', 'float')
     )
-    def on_get(self, req, resp, **kwargs):
+
+    def get(self, req, resp, **kwargs):
         country = Currencies.objects.filter(**kwargs).first()
         if country is None:
             resp.status = falcon.HTTP_404

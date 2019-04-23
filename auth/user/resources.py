@@ -27,12 +27,12 @@ class UsersResource(Resource):
 
         # get_request_multiple(Users, req.params, resp)
 
-    def on_post(self, req, resp, **kwargs):
+    def post(self, req, resp, data, **kwargs):
         """
         POST(create) user
         url: users/
         """
-        post_create_user(req, resp)
+        post_create_user(req, resp, data)
 
 
 class UserResource(Resource):
@@ -43,16 +43,26 @@ class UserResource(Resource):
             ('email', 'string'),
             ('tel', 'string'),
             ('is_active', 'boolean'),
-            ('get_last_login:last_login', 'float'),
-            ('get_date_created:date_created', 'float'),
+            ('get_date_created:date_created', 'integer'),
             ('image', 'string'),
             ('groups', 'objects', (
+                ('id', 'string'),
                 ('name', 'string'),
+                ('project', 'object', (
+                    ('id', 'string'),
+                    ('name', 'object', (
+                        ('en', 'string'),
+                        ('ru', 'string'),
+                        ('uk', 'string'),
+                    ))
+                )),
                 ('permissions', 'objects', (
                     ('id', 'string'),
                     ('get_access:access', 'string'),
-                ),),
-            ),)
+                )),
+                ('g_type', 'string'),
+                ('is_owner', 'boolean')
+            ))
         )
 
     use_token = True
@@ -69,14 +79,14 @@ class UserResource(Resource):
         else:
             resp.status = falcon.HTTP_404
 
-    def on_post(self, req, resp, **kwargs):
+    def post(self, req, resp, data, **kwargs):
         """
         POST(create) user via registration
         url: users/registration/
         """
-        post_create_user(req, resp)
+        post_create_user(req, resp, data)
 
-    def on_put(self, req, resp, **kwargs):
+    def put(self, req, resp, data, **kwargs):
         """
         PUT user by id with given data
         url: users/{id}/
@@ -85,12 +95,6 @@ class UserResource(Resource):
 
         if user is None:
             resp.status = falcon.HTTP_404
-            return
-
-        try:
-            data = json.load(req.stream)
-        except json.JSONDecodeError:
-            resp.status = falcon.HTTP_400
             return
 
         if not data.get('password'):
@@ -137,12 +141,8 @@ class LoginResource(Resource):
 
 class RegistrationResource(Resource):
 
-    def on_post(self, request, response, **kwargs):
-        try:
-            print(json.load(request.stream))
-        except json.JSONDecodeError as e:
-            print(e)
-            print(request.stream)
+    def post(self, request, response, data, **kwargs):
+        print(data)
 
         response.status = falcon.HTTP_200
         response.media = {'status': 'OK'}

@@ -26,8 +26,8 @@ class GroupsResource(Resource):
 
             )),
             ('permissions', 'objects', (
-                ('name', 'string'),
-                ('access', 'integer')
+                ('id', 'string'),
+                ('get_access:access', 'string')
             )),
         ), iterable=True)
 
@@ -60,8 +60,8 @@ class GroupsResource(Resource):
 
                 )),
                 ('permissions', 'objects', (
-                    ('name', 'string'),
-                    ('access', 'integer')
+                    ('id', 'string'),
+                    ('get_access:access', 'string')
                 )),
             ))
             resp.status = falcon.HTTP_200
@@ -86,7 +86,6 @@ class GroupResource(Resource):
             return
         resp.status = falcon.HTTP_OK
         resp.media = dict_from_model(group, (
-
             ('id', 'string'),
             ('name', 'string'),
             ('g_type', 'string'),
@@ -106,8 +105,8 @@ class GroupResource(Resource):
                 )),
             )),
             ('permissions', 'objects', (
-                ('name', 'string'),
-                ('access', 'integer')
+                ('id', 'string'),
+                ('get_access:access', 'string')
             )),
         ))
 
@@ -171,8 +170,8 @@ class GroupResource(Resource):
                     )),
                 )),
                 ('permissions', 'objects', (
-                    ('name', 'string'),
-                    ('access', 'integer')
+                    ('id', 'string'),
+                    ('get_access:access', 'string')
                 )),
             ))
             resp.status = falcon.HTTP_200
