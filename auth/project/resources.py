@@ -11,7 +11,7 @@ from gusto_api.utils import dict_from_model
 class ProjectResource(Resource):
     use_token = True
 
-    def on_get(self, req, resp, **kwargs):
+    def get(self, req, resp, **kwargs):
         """
         get project by group id
         url: projects/{group_id}/
@@ -19,37 +19,33 @@ class ProjectResource(Resource):
         if kwargs.get('group_id'):
             group_id = kwargs.pop('group_id', None)
             kwargs['id'] = Groups.objects.filter(id=group_id).first().project.id
+        if not kwargs.get('id', False):
+            resp.status = falcon.HTTP_404
+            return
         resp.status = falcon.HTTP_OK
         resp.media = dict_from_model(Projects.objects.filter(id=kwargs.get('id')).first(), (
-                ('id', 'string'),
-                ('domain', 'string'),
-                ('additional_domains', 'list'),
-                ('address', 'objects', (
-                    ('en', 'string'),
-                    ('ru', 'string'),
-                    ('uk', 'string'),
-                )),
-                ('logo', 'string'),
-                ('favicon', 'string'),
-                ('name', 'object', (
-                    ('en', 'string'),
-                    ('ru', 'string'),
-                    ('uk', 'string'),
-                )),
+            ('id', 'string'),
+            ('domain', 'string'),
+            ('additional_domains', 'list'),
+            ('address', 'objects', (
+                ('en', 'string'),
+                ('ru', 'string'),
+                ('uk', 'string'),
+            )),
+            ('logo', 'string'),
+            ('favicon', 'string'),
+            ('name', 'object', (
+                ('en', 'string'),
+                ('ru', 'string'),
+                ('uk', 'string'),
+            )),
         ))
 
-        # get_request_single(Projects, resp, **kwargs)
-
-    def on_post(self, req, resp, **kwargs):
+    def post(self, req, resp, data, **kwargs):
         """
         Post(create) project
         url: projects/
         """
-        try:
-            data = json.load(req.stream)
-        except json.JSONDecodeError:
-            resp.status = falcon.HTTP_400
-            return
 
         if not data:
             resp.status = falcon.HTTP_400
@@ -82,7 +78,7 @@ class ProjectResource(Resource):
         ))
         resp.status = falcon.HTTP_201
 
-    def on_put(self, req, resp, **kwargs):
+    def put(self, req, resp, data, **kwargs):
         """
         PUT project by id with given data
         url: projects/{id}/
@@ -98,15 +94,11 @@ class ProjectResource(Resource):
                 resp.status = falcon.HTTP_400
                 return
 
-            update_data = json.loads(req.stream.read())
-            # if update_data.get('additional_domains', False):
-            #     temp = update_data.pop('additional_domains')
-            #     print(temp)
-            project.update(**update_data)
-            # project.additional_domains = temp
-            print(project.additional_domains)
-            # project.save()
-            resp.status = falcon.HTTP_200
+            if data != {}:
+                project.update(**data)
+                resp.status = falcon.HTTP_200
+            else:
+                resp.status = falcon.HTTP_BAD_REQUEST
         except Exception as e:
             print(e)
             resp.status = falcon.HTTP_400

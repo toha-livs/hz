@@ -122,18 +122,13 @@ def generate_users_tokens_by_group(group: Groups):
         generate_user_token(user)
 
 
-def post_create_user(req: falcon.Request, resp: falcon.Response) -> None:
+def post_create_user(req: falcon.Request, resp: falcon.Response, data) -> None:
     """
     Create user. Handler for HTTP POST request on users/login/ and /users/
     :param req: instance of falcon.Request class
     :param resp: instance of falcon.Response class
     """
-    try:
-        data = falcon.json.load(req.stream)
-    except json.JSONDecodeError as e:
-        print(e)
-        resp.status = falcon.HTTP_400
-        return
+
 
     if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
         resp.status = falcon.HTTP_400

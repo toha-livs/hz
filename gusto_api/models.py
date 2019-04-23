@@ -63,6 +63,7 @@ class Countries(Document):
 
         return response
 
+
     def __str__(self):
         return f"<Currencies id={self.id}, name={self.name}, iso2={self.iso2}, currency={self.currency}>"
 
