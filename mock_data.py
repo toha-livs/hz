@@ -119,7 +119,7 @@ def fun():
             symbol="symbol_" + str(counter),
             code="code_" + str(counter),
             rate=counter,
-            rates=counter,
+            rates=[counter],
             last_update=datetime.datetime.now(),
         )
         curr.save()
@@ -160,5 +160,5 @@ def fun():
 
 
 if __name__ == '__main__':
-    fill_db()
+    # fill_db()
     fun()

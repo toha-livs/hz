@@ -4,6 +4,8 @@ from gusto_api.models import Countries, Currencies
 import falcon
 import json, datetime
 
+from gusto_api.utils import dict_from_model
+
 
 class CurrenciesResource(Resource):
     use_token = True
@@ -11,23 +13,22 @@ class CurrenciesResource(Resource):
     def on_get(self, req, resp, **kwargs):
         get_request_multiple(Currencies, req.params, resp)
 
-    def on_post(self, req, resp, **kwargs):
-
-        try:
-            post_data = req.stream.read()
-
-            if post_data:
-                post_data = json.loads(post_data)
-            else:
-                post_data = {}
-            post_data['last_update'] = datetime.datetime.now()
-            country = Currencies(**post_data)
-            country.save()
-
+    def post(self, req, resp, data, **kwargs):
+        if data != {}:
+            data['last_update'] = datetime.datetime.now()
+            currency = Currencies(**data)
+            currency.save()
+            resp.media = dict_from_model(currency, (
+                ('id', 'string'),
+                ('name', 'string'),
+                ('code', 'string'),
+                ('rate', 'integer'),
+                ('rates', 'list'),
+                ('get_last_update:last_update', 'float')
+            ))
             resp.status = falcon.HTTP_200
-        except Exception as e:
-            print(e)
-            resp.status = falcon.HTTP_400
+        else:
+            resp.status = falcon.HTTP_BAD_REQUEST
 
 
 class CurrencyResource(Resource):
@@ -35,26 +36,29 @@ class CurrencyResource(Resource):
     def on_get(self, req, resp, **kwargs):
         get_request_single(Currencies, resp, **kwargs)
 
-    def on_put(self, req, resp, **kwargs):
-        try:
-            if 'id' not in kwargs.keys():
-                resp.status = falcon.HTTP_400
-                return
-
-            country = Currencies.objects.filter(**kwargs).first()
-
-            if country is None:
-                resp.status = falcon.HTTP_400
-                return
-
-            update_data = json.loads(req.stream.read())
-            update_data['last_update'] = datetime.datetime.now()
-            country.update(**update_data)
-            resp.status = falcon.HTTP_200
-        except Exception as e:
-            print(e)
-            print('qweqweqwqweqweqweqweqewqweeqw')
+    def put(self, req, resp, data, **kwargs):
+        if 'id' not in kwargs.keys():
             resp.status = falcon.HTTP_400
+            return
+        currency = Currencies.objects.filter(**kwargs).first()
+        if currency is None:
+            resp.status = falcon.HTTPNotFound
+            return
 
-    def on_delete(self, req, resp, **kwargs):
-        delete_request(Currencies, resp, **kwargs)
+        data['last_update'] = datetime.datetime.now()
+        currency.update(**data)
+        resp.media = dict_from_model(currency, (
+            ('id', 'string'),
+            ('name', 'string'),
+            ('code', 'string'),
+            ('rate', 'integer'),
+            ('rates', 'list'),
+            ('get_last_update:last_update', 'float')
+        ))
+        resp.status = falcon.HTTP_200
+
+    def delete(self, req, resp, data, **kwargs):
+        if kwargs.get('id'):
+            Currencies.objects.filter(id=kwargs['id']).first().delete()
+        else:
+            raise falcon.HTTPNotFound

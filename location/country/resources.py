@@ -1,65 +1,118 @@
 from falcon_core.resources import Resource
-from auth.utils import get_request_multiple, get_request_single, delete_request
+from auth.utils import delete_request
 from gusto_api.models import Countries, Currencies
 import falcon
 import json
+
+from gusto_api.utils import filter_queryset, dict_from_model
 
 
 class CountriesResource(Resource):
     use_token = True
 
-    def on_get(self, req, resp, **kwargs):
-        get_request_multiple(Countries, req.params, resp)
+    def get(self, req, resp, **kwargs):
+        countries = filter_queryset(Countries.objects, **req.params)
+        resp.status = falcon.HTTP_OK
+        resp.media = dict_from_model(countries, (
+            ('id', 'string'),
+            ('name', 'string'),
+            ('iso2', 'string'),
+            ('dial_code', 'string'),
+            ('priority', 'integer'),
+            ('area_codes', 'list'),
+            ('currency', 'object', (
+                ('name', 'string'),
+                ('symbol', 'string'),
+                ('code', 'string'),
+                ('rate', 'integer'),
+                ('rate', 'integer')
+            )),
 
-    def on_post(self, req, resp, **kwargs):
+        ), iterable=True)
 
-        try:
-            post_data = req.stream.read()
-
-            if post_data:
-                post_data = json.loads(post_data)
-            else:
-                post_data = {}
-
-            country = Countries(**post_data)
+    def post(self, req, resp, data, **kwargs):
+        if data != {}:
+            country = Countries(**data)
             country.save()
-
+            resp.media = dict_from_model(country, (
+                ('id', 'string'),
+                ('name', 'string'),
+                ('iso2', 'string'),
+                ('dial_code', 'string'),
+                ('priority', 'integer'),
+                ('area_codes', 'list'),
+                ('currency', 'object', (
+                    ('name', 'string'),
+                    ('symbol', 'string'),
+                    ('code', 'string'),
+                    ('rate', 'integer'),
+                    ('rate', 'integer')
+                )),
+            ))
             resp.status = falcon.HTTP_200
-        except Exception as e:
-            print(e)
-            resp.status = falcon.HTTP_400
+        else:
+            resp.status = falcon.HTTP_BAD_REQUEST
 
 
 class CountryResource(Resource):
 
-    def on_get(self, req, resp, **kwargs):
-        get_request_single(Countries, resp, **kwargs)
+    def get(self, req, resp, **kwargs):
+        country = Countries.objects.filter(id=kwargs['id']).first()
+        if country is None:
+            resp.status = falcon.HTTPNotFound
+        resp.media = dict_from_model(country, (
+            ('id', 'string'),
+            ('name', 'string'),
+            ('iso2', 'string'),
+            ('dial_code', 'string'),
+            ('priority', 'integer'),
+            ('area_codes', 'list'),
+            ('currency', 'object', (
+                ('name', 'string'),
+                ('symbol', 'string'),
+                ('code', 'string'),
+                ('rate', 'integer'),
+                ('rate', 'integer')
+            )),
+        ))
+        resp.status = falcon.HTTP_OK
 
-    def on_put(self, req, resp, **kwargs):
-        try:
-            if 'id' not in kwargs.keys():
-                resp.status = falcon.HTTP_400
-                return
-
-            country = Countries.objects.filter(**kwargs).first()
-
-            if country is None:
-                resp.status = falcon.HTTP_400
-                return
-
-            update_data = json.loads(req.stream.read())
-
-            if update_data.get('currency', False):
-                curr = Currencies.objects.filter(id=update_data['currency']).first()
-                if curr:
-                    update_data['currency'] = curr
-
-            country.update(**update_data)
-
-            resp.status = falcon.HTTP_200
-        except Exception as e:
-            print(e)
+    def put(self, req, resp, data, **kwargs):
+        if 'id' not in kwargs.keys():
             resp.status = falcon.HTTP_400
+            return
 
-    def on_delete(self, req, resp, **kwargs):
-        delete_request(Countries, resp, **kwargs)
+        country = Countries.objects.filter(**kwargs).first()
+
+        if country is None:
+            resp.status = falcon.HTTPNotFound
+            return
+
+        if data.get('currency', False):
+            curr = Currencies.objects.filter(id=data['currency']).first()
+            if curr:
+                data['currency'] = curr
+
+        country.update(**data)
+        resp.media = dict_from_model(country, (
+            ('id', 'string'),
+            ('name', 'string'),
+            ('iso2', 'string'),
+            ('dial_code', 'string'),
+            ('priority', 'integer'),
+            ('area_codes', 'list'),
+            ('currency', 'object', (
+                ('name', 'string'),
+                ('symbol', 'string'),
+                ('code', 'string'),
+                ('rate', 'integer'),
+                ('rate', 'integer')
+            )),
+        ))
+        resp.status = falcon.HTTP_OK
+
+    def delete(self, req, resp, data, **kwargs):
+        if kwargs.get('id'):
+            Countries.objects.filter(id=kwargs['id']).first().delete()
+        else:
+            raise falcon.HTTPNotFound

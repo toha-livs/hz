@@ -81,7 +81,9 @@ class GroupResource(Resource):
             group = Groups.objects.filter(id=kwargs['id']).first()
         else:
             group = Groups.objects.filter(project=kwargs['project_id']).first()
-
+        if group is None:
+            resp.status = falcon.HTTP_404
+            return
         resp.status = falcon.HTTP_OK
         resp.media = dict_from_model(group, (
 
@@ -124,7 +126,7 @@ class GroupResource(Resource):
             group = Groups.objects.filter(**kwargs).first()
 
             if group is None:
-                resp.status = falcon.HTTP_400
+                resp.status = falcon.HTTP_404
                 return
 
             if data.get('project', False):
@@ -177,12 +179,12 @@ class GroupResource(Resource):
         else:
             resp.status = falcon.HTTP_BAD_REQUEST
 
-    def on_delete(self, req, resp, **kwargs):
+    def delete(self, req, resp, data, **kwargs):
         """
         DELETE group by id
         url: groups/{id}/
         """
         if kwargs.get('id'):
-            Users.objects.filter(id=kwargs['id']).first().delete()
+            Groups.objects.filter(id=kwargs['id']).first().delete()
         else:
             raise falcon.HTTPNotFound
