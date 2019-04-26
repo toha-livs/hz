@@ -102,6 +102,7 @@ class Users(Document):
     unique_fields = users['unique_fields']
 
     name = StringField(required=True)
+    surname = StringField()
     email = EmailField(required=True, unique=True)
     password = StringField(required=True)
     last_login = DateTimeField()
