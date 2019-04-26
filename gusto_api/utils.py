@@ -4,7 +4,7 @@ from importlib import import_module
 
 from falcon import HTTPBadRequest
 
-from falcon_core.utils import dict_from_obj
+from falcon_core.utils import dict_from_obj, obj_from_dict
 
 os.environ.setdefault('FALCON_SETTINGS_MODULE', 'gusto_api.settings')
 
@@ -41,7 +41,15 @@ def filter_queryset(queryset, **kwargs):
 
 
 def dict_from_model(queryset, data, iterable=False):
-    # try:
     return dict_from_obj(queryset, data, iterable)
-    # except Exception:
-    #     raise HTTPBadRequest
+
+
+def model_from_dict(obj_dict, data, iterable=False):
+    try:
+        obj = obj_from_dict(obj_dict, data, iterable)
+    except ValueError:
+
+        return (None, 'val error',)
+    except KeyError:
+        return (None, 'key error')
+    return obj

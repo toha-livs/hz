@@ -1,4 +1,5 @@
 from mongoengine import *
+from mongoengine.errors import ValidationError
 from datetime import datetime, time
 
 from falcon_core.utils import encrypt_sha256_with_secret_key
@@ -62,7 +63,6 @@ class Countries(Document):
                         )
 
         return response
-
 
     def __str__(self):
         return f"<Currencies id={self.id}, name={self.name}, iso2={self.iso2}, currency={self.currency}>"
@@ -153,7 +153,7 @@ class Projects(Document):
         'logo': ImageTemplate,
         'favicon': ImageTemplate
     }
-    name = EmbeddedDocumentField(LanguageTemplate)
+    name = StringField()
     domain = StringField(unique=True)
     additional_domains = ListField(StringField())
     address = EmbeddedDocumentListField(LanguageTemplate)
@@ -221,22 +221,48 @@ class Users(Document):
               'image': str,
               'tel': str}
 
-    temp_fields = [
-        'groups'
-    ]
+    temp_fields = {
+        'default': (('id', 'string'),
+                    ('name', 'string'),
+                    ('email', 'string'),
+                    ('tel', 'string'),
+                    ('is_active', 'boolean'),
+                    ('get_date_created', 'integer'),
+                    ('image', 'string'),
+                    ('groups', 'objects', (
+                        ('id', 'string'),
+                        ('name', 'string'),
+                        ('project', 'object', (
+                            ('id', 'string'),
+                            ('name', 'object', (
+                                ('en', 'string'),
+                                ('ru', 'string'),
+                                ('uk', 'string'),
+                            ))
+                        )),
+                        ('permissions', 'objects', (
+                            ('id', 'string'),
+                            ('get_access:access', 'string'),
+                        )),
+                        ('g_type', 'string'),
+                        ('is_owner', 'boolean')
+                    ))
+                    )
+    }
 
     filters = {
         'groups': 'filter_groups'
     }
 
-    name = StringField()
-    email = EmailField()
-    password = StringField()
+    name = StringField(required=True)
+    surname = StringField()
+    email = EmailField(required=True, unique=True)
+    password = StringField(required=True)
     last_login = DateTimeField()
     date_created = DateTimeField()
-    is_active = BooleanField()
+    is_active = BooleanField(default=True)
     image = StringField()
-    tel = StringField(max_length=24)
+    tel = StringField(max_length=24, required=True, unique=True)
 
     @property
     def groups(self):
@@ -249,6 +275,32 @@ class Users(Document):
     @property
     def get_date_created(self):
         return datetime.timestamp(self.date_created)
+
+    def check_valid_unique(self):
+        # if Users.objects.filter((Q(email=self.email) or (Q(tel=self.tel)))):
+        if Users.objects.filter(email=self.email).first():
+            return None, f'user with email {self.email} already exists'
+        elif Users.objects.filter(tel=self.tel).first():
+            return None, f'user with tel {self.tel} already exists'
+        try:
+            self.validate()
+            return self, None
+        except ValidationError as e:
+            print(e.errors.keys())
+            return None, 'Not validate ' + ' ,'.join(e.errors.keys())
+
+
+
+
+    ##
+
+    @property
+    def get_token(self):
+        return UsersTokens.objects.filter(user=self).first()
+
+    def groups_values(self, col_name):
+        return self.groups.values_list(col_name)
+    # ##
 
     def generate_token(self):
         groups = Groups.objects.filter(users__in=[self.id])
@@ -272,7 +324,7 @@ class Users(Document):
         return None
 
     def __repr__(self):
-        return f'<{type(self).__name__} id={self.id}>'
+        return f'<{type(self).__name__} {str([{f: getattr(self, f)} for f in self])}>'
 
 
 class Groups(Document):
@@ -295,7 +347,7 @@ class Groups(Document):
 
     users = ListField(ReferenceField(Users, reverse_delete_rule=PULL))
     project = ReferenceField(Projects, reverse_delete_rule=NULLIFY)
-    name = StringField()
+    name = StringField(required=True)
     permissions = ListField(ReferenceField(Permissions, reverse_delete_rule=PULL))
     g_type = StringField()
     is_owner = BooleanField(default=False)
