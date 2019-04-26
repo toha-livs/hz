@@ -21,7 +21,7 @@ class UsersResource(Resource):
         resp.status = falcon.HTTP_OK
         resp.media = dict_from_model(users, UserResource.users_dict_template, iterable=True)
 
-    def post(self, req, resp, data,**kwargs):
+    def post(self, req, resp, data, **kwargs):
         """
         POST(create) user
         url: users/
