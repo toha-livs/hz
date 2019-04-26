@@ -17,7 +17,36 @@ users = {
     'unique_fields': (
         'email',
         'tel'
-    )
+    ),
+    'response_templates':
+        {'short': (
+            ('id', 'string'),
+            ('name', 'string'),
+            ('email', 'string'),
+            ('tel', 'string'),
+            ('is_active', 'boolean'),
+            ('get_date_created:date_created', 'integer'),
+            ('image', 'string'),
+            ('groups', 'objects', (
+                ('id', 'string'),
+                ('name', 'string'),
+                ('project', 'object', (
+                    ('id', 'string'),
+                    ('name', 'object', (
+                        ('en', 'string'),
+                        ('ru', 'string'),
+                        ('uk', 'string'),
+                    ))
+                )),
+                ('permissions', 'objects', (
+                    ('id', 'string'),
+                    ('get_access:access', 'string'),
+                )),
+                ('g_type', 'string'),
+                ('is_owner', 'boolean')
+            ))
+        )
+        }
 
 }
 
@@ -46,6 +75,53 @@ groups = {
     ],
     'filters': {
         'users': 'filter_users'
+    },
+    'response_templates': {
+        'short': (
+            ('id', 'string'),
+            ('name', 'string'),
+            ('g_type', 'string'),
+            ('is_owner', 'boolean'),
+            ('project', 'object', (
+                ('id', 'string'),
+                ('name', 'object', (
+                    ('en', 'string'),
+                    ('ru', 'string'),
+                    ('uk', 'string'),
+                )),
+                ('additional_domains', 'list'),
+
+            )),
+            ('permissions', 'objects', (
+                ('id', 'string'),
+                ('get_access:access', 'string')
+            )),
+        ),
+        'long': (
+            ('id', 'string'),
+            ('name', 'string'),
+            ('g_type', 'string'),
+            ('is_owner', 'boolean'),
+            ('users', 'objects', (
+                ('name', 'string'),
+                ('email', 'string'),
+                ('is_active', 'boolean'),
+                ('image', 'string'),
+            )),
+            ('project', 'object', (
+                ('id', 'string'),
+                ('name', 'object', (
+                    ('en', 'string'),
+                    ('ru', 'string'),
+                    ('uk', 'string'),
+                )),
+
+            )),
+            ('permissions', 'objects', (
+                ('id', 'string'),
+                ('get_access:access', 'string')
+            )),
+        )
     }
 }
 groups_templates = {

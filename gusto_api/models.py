@@ -97,6 +97,8 @@ class Users(Document):
 
     temp_fields = users['temp_fields']
 
+    response_templates = users['response_templates']
+
     filters = users['filters']
 
     unique_fields = users['unique_fields']
@@ -154,6 +156,8 @@ class Groups(Document):
     temp_fields = groups['temp_fields']
 
     filters = groups['filters']
+
+    response_templates = groups['response_templates']
 
     users = ListField(ReferenceField(Users, reverse_delete_rule=PULL))
     project = ReferenceField(Projects, reverse_delete_rule=NULLIFY, required=True)

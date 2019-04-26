@@ -10,26 +10,7 @@ class GroupsResource(Resource):
     def get(self, req, resp, **kwargs):
         groups = filter_queryset(Groups.objects, **req.params)
         resp.status = falcon.HTTP_OK
-        resp.media = dict_from_model(groups, (
-            ('id', 'string'),
-            ('name', 'string'),
-            ('g_type', 'string'),
-            ('is_owner', 'boolean'),
-            ('project', 'object', (
-                ('id', 'string'),
-                ('name', 'object', (
-                    ('en', 'string'),
-                    ('ru', 'string'),
-                    ('uk', 'string'),
-                )),
-                ('additional_domains', 'list'),
-
-            )),
-            ('permissions', 'objects', (
-                ('id', 'string'),
-                ('get_access:access', 'string')
-            )),
-        ), iterable=True)
+        resp.media = dict_from_model(groups, Groups.response_templates['short'], iterable=True)
 
     def post(self, req, resp, data, **kwargs):
         """
@@ -39,31 +20,7 @@ class GroupsResource(Resource):
         if data != {}:
             group = Groups(**data)
             group.save()
-            resp.media = dict_from_model(group, (
-                ('id', 'string'),
-                ('name', 'string'),
-                ('g_type', 'string'),
-                ('is_owner', 'boolean'),
-                ('users', 'objects', (
-                    ('name', 'string'),
-                    ('email', 'string'),
-                    ('is_active', 'boolean'),
-                    ('image', 'string'),
-                )),
-                ('project', 'object', (
-                    ('id', 'string'),
-                    ('name', 'object', (
-                        ('en', 'string'),
-                        ('ru', 'string'),
-                        ('uk', 'string'),
-                    )),
-
-                )),
-                ('permissions', 'objects', (
-                    ('id', 'string'),
-                    ('get_access:access', 'string')
-                )),
-            ))
+            resp.media = dict_from_model(group, Groups.response_templates['long'])
             resp.status = falcon.HTTP_200
         else:
             resp.status = falcon.HTTP_BAD_REQUEST
@@ -85,30 +42,7 @@ class GroupResource(Resource):
             resp.status = falcon.HTTP_404
             return
         resp.status = falcon.HTTP_OK
-        resp.media = dict_from_model(group, (
-            ('id', 'string'),
-            ('name', 'string'),
-            ('g_type', 'string'),
-            ('is_owner', 'boolean'),
-            ('users', 'objects', (
-                ('name', 'string'),
-                ('email', 'string'),
-                ('is_active', 'boolean'),
-                ('image', 'string'),
-            )),
-            ('project', 'object', (
-                ('id', 'string'),
-                ('name', 'object', (
-                    ('en', 'string'),
-                    ('ru', 'string'),
-                    ('uk', 'string'),
-                )),
-            )),
-            ('permissions', 'objects', (
-                ('id', 'string'),
-                ('get_access:access', 'string')
-            )),
-        ))
+        resp.media = dict_from_model(group, Groups.response_templates['long'])
 
     def put(self, req, resp, data, **kwargs):
         """
@@ -150,30 +84,7 @@ class GroupResource(Resource):
                 data['permissions'] = permissions
 
             group.update(**data)
-            resp.media = dict_from_model(group, (
-                ('id', 'string'),
-                ('name', 'string'),
-                ('g_type', 'string'),
-                ('is_owner', 'boolean'),
-                ('users', 'objects', (
-                    ('name', 'string'),
-                    ('email', 'string'),
-                    ('is_active', 'boolean'),
-                    ('image', 'string'),
-                )),
-                ('project', 'object', (
-                    ('id', 'string'),
-                    ('name', 'object', (
-                        ('en', 'string'),
-                        ('ru', 'string'),
-                        ('uk', 'string'),
-                    )),
-                )),
-                ('permissions', 'objects', (
-                    ('id', 'string'),
-                    ('get_access:access', 'string')
-                )),
-            ))
+            resp.media = dict_from_model(group, Groups.response_templates['long'])
             resp.status = falcon.HTTP_200
         else:
             resp.status = falcon.HTTP_BAD_REQUEST
