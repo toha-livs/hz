@@ -160,5 +160,5 @@ def fun():
 
 
 if __name__ == '__main__':
-    # fill_db()
-    fun()
+    fill_db()
+    # fun()

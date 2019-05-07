@@ -14,7 +14,7 @@ import falcon
 import unidecode
 import requests
 
-from mongoengine import Q
+from mongoengine import Q, ValidationError
 
 from gusto_api.utils import encrypt, dict_from_model
 from gusto_api.models import Groups, Users, UsersTokens, Projects, Currencies, Countries, Cities
@@ -119,6 +119,7 @@ def generate_users_tokens_by_group(group: Groups):
     :param group: instance of the Group class inherited from MongoEngine Document class
     """
     for user in group.users:
+        # user.generate_token()
         generate_user_token(user)
 
 
@@ -320,3 +321,4 @@ def encrypt_password(user, password):
 
 def get_user_token(token):
     return UsersTokens.objects.filter(token=token).first()
+
