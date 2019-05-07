@@ -19,9 +19,9 @@ class UsersResource(Resource):
 
         users = filter_queryset(Users.objects, **req.params)
         resp.status = falcon.HTTP_OK
-        resp.media = dict_from_model(users, UserResource.users_dict_template, iterable=True)
+        resp.media = dict_from_model(users, Users.response_templates['short'], iterable=True)
 
-    def post(self, req, resp, data,**kwargs):
+    def post(self, req, resp, data, **kwargs):
         """
         POST(create) user
         url: users/
@@ -30,34 +30,6 @@ class UsersResource(Resource):
 
 
 class UserResource(Resource):
-
-    users_dict_template = (
-            ('id', 'string'),
-            ('name', 'string'),
-            ('email', 'string'),
-            ('tel', 'string'),
-            ('is_active', 'boolean'),
-            ('get_date_created:date_created', 'integer'),
-            ('image', 'string'),
-            ('groups', 'objects', (
-                ('id', 'string'),
-                ('name', 'string'),
-                ('project', 'object', (
-                    ('id', 'string'),
-                    ('name', 'object', (
-                        ('en', 'string'),
-                        ('ru', 'string'),
-                        ('uk', 'string'),
-                    ))
-                )),
-                ('permissions', 'objects', (
-                    ('id', 'string'),
-                    ('get_access:access', 'string'),
-                )),
-                ('g_type', 'string'),
-                ('is_owner', 'boolean')
-            ))
-        )
 
     use_token = True
 
@@ -69,7 +41,7 @@ class UserResource(Resource):
         user = Users.objects.filter(id=kwargs['id']).first()
         if user:
             resp.status = falcon.HTTP_OK
-            resp.media = dict_from_model(user, self.users_dict_template)
+            resp.media = dict_from_model(user, Users.response_templates['short'])
         else:
             resp.status = falcon.HTTP_404
 
@@ -126,7 +98,7 @@ class LoginResource(Resource):
                 ('tel', 'email')[int(bool('@' in data['login']))]: data.pop('login')
             }).first()
             if user and user.password == encrypt_password(user, data['password']):
-                resp.media = dict_from_model(user, UserResource.users_dict_template)
+                resp.media = dict_from_model(user, Users.response_templates['short'])
             else:
                 raise falcon.HTTPUnauthorized
         else:
