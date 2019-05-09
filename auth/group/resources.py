@@ -7,16 +7,17 @@ from gusto_api.models import Groups, Projects, Users, Permissions
 class GroupsResource(Resource):
     use_token = True
 
-    def get(self, req, resp, **kwargs):
+    def on_get(self, req, resp, **kwargs):
         groups = filter_queryset(Groups.objects, **req.params)
         resp.status = falcon.HTTP_OK
         resp.media = dict_from_model(groups, Groups.response_templates['short'], iterable=True)
 
-    def post(self, req, resp, data, **kwargs):
+    def on_post(self, req, resp, **kwargs):
         """
         POST(create) group
         url: groups/
         """
+        data = req.context['data']
         if data != {}:
             group = Groups(**data)
             group.save()
@@ -29,7 +30,7 @@ class GroupsResource(Resource):
 class GroupResource(Resource):
     use_token = True
 
-    def get(self, req, resp, **kwargs):
+    def on_get(self, req, resp, **kwargs):
         """
         GET group by id
         url: groups/{id}/
@@ -44,11 +45,13 @@ class GroupResource(Resource):
         resp.status = falcon.HTTP_OK
         resp.media = dict_from_model(group, Groups.response_templates['long'])
 
-    def put(self, req, resp, data, **kwargs):
+    def on_put(self, req, resp, **kwargs):
         """
         PUT group by id with given data
         url: groups/{id}/
         """
+
+        data = req.context['data']
 
         if 'id' not in kwargs.keys():
             resp.status = falcon.HTTP_400
@@ -89,7 +92,7 @@ class GroupResource(Resource):
         else:
             resp.status = falcon.HTTP_BAD_REQUEST
 
-    def delete(self, req, resp, data, **kwargs):
+    def on_delete(self, req, resp, **kwargs):
         """
         DELETE group by id
         url: groups/{id}/

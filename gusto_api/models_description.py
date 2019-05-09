@@ -19,7 +19,7 @@ users = {
         'tel'
     ),
     'response_templates':
-        {'short': (
+        {'login': (
             ('id', 'string'),
             ('name', 'string'),
             ('email', 'string'),
@@ -27,6 +27,7 @@ users = {
             ('is_active', 'boolean'),
             ('get_date_created:date_created', 'integer'),
             ('image', 'string'),
+            ('token:token', 'string'),
             ('groups', 'objects', (
                 ('id', 'string'),
                 ('name', 'string'),
@@ -45,7 +46,34 @@ users = {
                 ('g_type', 'string'),
                 ('is_owner', 'boolean')
             ))
-        )
+        ),
+            'short': (
+                ('id', 'string'),
+                ('name', 'string'),
+                ('email', 'string'),
+                ('tel', 'string'),
+                ('is_active', 'boolean'),
+                ('get_date_created:date_created', 'integer'),
+                ('image', 'string'),
+                ('groups', 'objects', (
+                    ('id', 'string'),
+                    ('name', 'string'),
+                    ('project', 'object', (
+                        ('id', 'string'),
+                        ('name', 'object', (
+                            ('en', 'string'),
+                            ('ru', 'string'),
+                            ('uk', 'string'),
+                        ))
+                    )),
+                    ('permissions', 'objects', (
+                        ('id', 'string'),
+                        ('get_access:access', 'string'),
+                    )),
+                    ('g_type', 'string'),
+                    ('is_owner', 'boolean')
+                ))
+            )
         }
 
 }
@@ -144,6 +172,26 @@ projects = {
         'logo': object,
         'favicon': object
     },
+    'response_templates': {
+        'short':
+            (
+                ('id', 'string'),
+                ('domain', 'string'),
+                ('additional_domains', 'list'),
+                ('address', 'objects', (
+                    ('en', 'string'),
+                    ('ru', 'string'),
+                    ('uk', 'string'),
+                )),
+                ('logo', 'string'),
+                ('favicon', 'string'),
+                ('name', 'object', (
+                    ('en', 'string'),
+                    ('ru', 'string'),
+                    ('uk', 'string'),
+                )),
+            )
+    }
 }
 
 currencies = {
@@ -154,6 +202,17 @@ currencies = {
         'rate': int,
         'rates': list,
         'last_update': int,
+    },
+    'response_template': {
+        'short': (
+            ('id', 'string'),
+            ('name', 'string'),
+            ('symbol', 'string'),
+            ('code', 'string'),
+            ('rate', 'integer'),
+            ('rates', 'list'),
+            ('get_last_update:last_update', 'float')
+        )
     },
     'unique_fields': (
         'code',
@@ -169,6 +228,23 @@ countries = {
         'priority': int,
         'area_codes': list,
         'currency': str,
+    },
+    'response_template': {
+        'short': (
+            ('id', 'string'),
+            ('name', 'string'),
+            ('iso2', 'string'),
+            ('dial_code', 'string'),
+            ('priority', 'integer'),
+            ('area_codes', 'list'),
+            ('currency', 'object', (
+                ('name', 'string'),
+                ('symbol', 'string'),
+                ('code', 'string'),
+                ('rate', 'integer'),
+                ('rate', 'integer')
+            )),
+        ),
     },
     'unique_fields': (
         'iso2',
@@ -187,6 +263,23 @@ cities = {
         'number_phone': str,
         'exist_store': bool
 
+    },
+    'response_templates': {
+        'short': (
+            ('name', 'string'),
+            ('country_code', 'string'),
+            ('default', 'boolean'),
+            ('active', 'boolean'),
+            ('lat', 'integer'),
+            ('lng', 'integer'),
+            ('number_phone', 'string'),
+            ('language', 'object', (
+                ('en', 'string'),
+                ('ru', 'string'),
+                ('uk', 'string'),
+            ),),
+            ('exist_store', 'boolean'),
+        )
     }
 }
 

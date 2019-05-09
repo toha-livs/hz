@@ -11,7 +11,7 @@ from gusto_api.utils import dict_from_model
 class ProjectResource(Resource):
     use_token = True
 
-    def get(self, req, resp, **kwargs):
+    def on_get(self, req, resp, **kwargs):
         """
         get project by group id
         url: projects/{group_id}/
@@ -41,12 +41,12 @@ class ProjectResource(Resource):
             )),
         ))
 
-    def post(self, req, resp, data, **kwargs):
+    def on_post(self, req, resp, **kwargs):
         """
         Post(create) project
         url: projects/
         """
-
+        data = req.context['data']
         if not data:
             resp.status = falcon.HTTP_400
             return
@@ -78,11 +78,12 @@ class ProjectResource(Resource):
         ))
         resp.status = falcon.HTTP_201
 
-    def put(self, req, resp, data, **kwargs):
+    def on_put(self, req, resp, **kwargs):
         """
         PUT project by id with given data
         url: projects/{id}/
         """
+        data = req.context['data']
         try:
             if 'id' not in kwargs.keys():
                 resp.status = falcon.HTTP_400

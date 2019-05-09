@@ -3,13 +3,16 @@ import random
 
 import falcon
 
-from falcon_core.resources import Resource
+from falcon_core.resources import Resource, JSONResource
 
 from gusto_api.models import SMS
 
 
 class SMSResource(Resource):
-    def post(self, req, resp, data, **kwargs):
+    use_token = False
+
+    def on_post(self, req, resp, **kwargs):
+        data = req.context['data']
         if data != {}:
 
             code = str(random.randint(1000, 9999))
@@ -26,7 +29,10 @@ class SMSResource(Resource):
 
 
 class SMSCheckResource(Resource):
-    def post(self, req, resp, data, **kwargs):
+    use_token = False
+
+    def on_post(self, req, resp, **kwargs):
+        data = req.context['data']
         if data != {}:
             sms = SMS.objects.filter(**data).first()
             if sms is None:

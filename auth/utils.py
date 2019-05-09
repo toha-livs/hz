@@ -12,7 +12,7 @@ import falcon
 import unidecode
 import requests
 
-from mongoengine import Q
+from mongoengine import Q, ValidationError
 
 from gusto_api.utils import encrypt, dict_from_model
 from gusto_api.models import Groups, Users, UsersTokens, Projects, Currencies, Countries, Cities
@@ -384,3 +384,13 @@ def get_user_token(token):
 # }
 
 
+def validate_obj(obj):
+    for field in obj.unique_fields:
+        if obj.__class__.objects.filter(**{field: getattr(obj, field)}).first():
+            return f'user with {field} {getattr(obj, field)} already exists'
+    try:
+        obj.validate()
+        return None
+    except ValidationError as e:
+        print(e.errors.keys())
+        return 'Not validate ' + ' ,'.join(e.errors.keys())

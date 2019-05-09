@@ -1,16 +1,15 @@
-import json
+from datetime import datetime
+
 import falcon
 
 from falcon_core.resources import Resource, JSONResource
-from mongoengine import Q
 
 from gusto_api.models import Users, Projects, Groups, Permissions
 from gusto_api.utils import encrypt, filter_queryset, dict_from_model, model_from_dict
-from auth.utils import delete_request, post_create_user, encrypt_password
+from auth.utils import delete_request, post_create_user, encrypt_password, validate_obj
 
 
-class UsersResource(JSONResource):
-
+class UsersResource(Resource):
     use_token = True
 
     def on_get(self, req, resp, **kwargs):
@@ -21,23 +20,22 @@ class UsersResource(JSONResource):
 
         users = filter_queryset(Users.objects, **req.params)
         resp.status = falcon.HTTP_OK
-        resp.media = dict_from_model(users, Users.temp_fields['default'], iterable=True)
+        resp.media = dict_from_model(users, Users.response_templates['short'], iterable=True)
 
-    def post(self, req, resp, data, **kwargs):
+    def on_post(self, req, resp, **kwargs):
         """
         POST(create) user
         url: users/
         """
-        user = Users(**data)
+        user = Users(**req.context['data'])
         print('before valid')
-        user, error = user.check_valid_unique()
-        if user:
-            user.save()
-            resp.status = falcon.HTTP_201
-        else:
+        error = validate_obj(user)
+        if error:
             resp.status = falcon.HTTP_400
             resp.body = error
             return
+        user.save()
+        resp.status = falcon.HTTP_201
         # post_create_user(req, resp, data)
 
 
@@ -52,28 +50,28 @@ class UserResource(Resource):
         user = Users.objects.filter(id=kwargs['id']).first()
         if user:
             resp.status = falcon.HTTP_OK
-            resp.media = dict_from_model(user, Users.temp_fields['default'])
+            resp.media = dict_from_model(user, Users.response_templates['short'])
         else:
             resp.status = falcon.HTTP_404
 
-    def post(self, req, resp, data, **kwargs):
+    def on_post(self, req, resp, **kwargs):
         """
         POST(create) user via registration
         url: users/registration/
         """
-        post_create_user(req, resp, data)
+        post_create_user(req, resp, req.context['data'])
 
-    def put(self, req, resp, data, **kwargs):
+    def on_put(self, req, resp, **kwargs):
         """
         PUT user by id with given data
         url: users/{id}/
         """
+        data = req.context['data']
         user = Users.objects.filter(id=kwargs.get('id')).first()
 
         if user is None:
             resp.status = falcon.HTTP_404
             return
-
         if not data.get('password'):
             data.pop('password', None)
         else:
@@ -97,98 +95,64 @@ class UserResource(Resource):
 
 
 class LoginResource(Resource):
+    use_token = False
 
-    def post(self, req, resp, data, **kwargs):
+    def on_post(self, req, resp, **kwargs):
         """
         POST(login) user with given (email or telephone) and password and return user token
         url: users/login/
         """
-
+        data = req.context['data']
         if data.get('login') and data.get('password'):
             user = Users.objects.filter(**{
                 ('tel', 'email')[int(bool('@' in data['login']))]: data.pop('login')
             }).first()
             if user and user.password == encrypt_password(user, data['password']):
-                resp.media = dict_from_model(user, Users.temp_fields['default'])
+                resp.media = dict_from_model(user, Users.response_templates['login'])
             else:
-                raise falcon.HTTPUnauthorized
+                raise falcon.HTTPUnauthorized('login or password don\'t match')
         else:
             raise falcon.HTTPBadRequest
 
 
-class RegistrationResource(JSONResource):
+class RegistrationResource(Resource):
+    use_token = False
 
-    use_token = True
-
-    def post(self, request, response, data, **kwargs):
+    def on_post(self, req, resp, **kwargs):
         # print(data)
-        # data['user'].pop('tel')
+        data = req.context['data']
+        [data['user'].pop(key, None) for key in set(Users.fields.keys() ^ data['user'].keys())]
+        [data['project'].pop(key, None) for key in set(Projects.fields.keys() ^ data['project'].keys())]
         user = Users(**data['user'])
+
+        user.password = encrypt(user.email + user.tel + user.password)
+        user.date_created = datetime.now()
+        user.last_login = datetime.now()
+        user.is_active = True
+
         project = Projects(**data['project'])
-        try:
-            user.validate()
-            project.validate()
-        except:
-            print('false')
+
+        for instance in [user, project]:
+            error = validate_obj(instance)
+            if error:
+                resp.status = falcon.HTTP_400
+                resp.body = error
+                return
+        user.save()
+        project.save()
+        group = Groups(users=[str(user.id)], project=str(project.id), name=project.name + '_Group',
+                       permissions=[str(perm.id) for perm in Permissions.objects.all()], g_type='restaurant')
+        error = validate_obj(group)
+        if error:
+            user.delete()
+            project.delete()
+            resp.status = falcon.HTTP_400
+            resp.body = error
             return
-        print(user)
-        # user.save()
-        # project.save()
-        # print('###user')
-        print(user, dir(user))
-        # print('###user')
-        # test_user = model_from_dict(data['user'], (Users, (
-        #     ('name:require', 'string'),
-        #     ('surname', 'string'),
-        #     ('tel:require', 'string'),
-        #     ('email:require', 'string'),
-        #     ('image', 'string'),
-        # )))
-        # print(test_user)
-        # if Users.objects.filter((Q(email=test_user.email) or (Q(tel=test_user.tel)))):
-        #     print('user is already exist')
-        #     test_user = None
-        # test_project = model_from_dict(data['project'], (Projects, (
-        #     ('name:require', 'string'),
-        #     ('domain:require', 'string'),
-        # )))
-        # print(test_project)
-        # test_group = Groups()
-        # user = post_create_user(request, response, data['user'])
-        # print(user, dir(user), user.id)
-        # print('user save')
-        # same_fields = set(data['project'].keys() ^ set(Projects.fields.keys()))
-        # print(f'same fields {same_fields}')
-        # [data['project'].pop(key, None) for key in same_fields]
-        # project = Projects(**data['project'])
-        # project.save()
-        # print('project save')
-        # if test_user is not None and test_project is not None:
-        #     print('save()')
-        #     test_user.save()
-        #     test_project.save()
-        #     group = Groups(users=[str(test_user.id)], project=str(test_project.id), name=test_project.name + '_Group',
-        #                    permissions=[str(perm.id) for perm in Permissions.objects.all()], g_type='restaurant')
-        #     group.save()
-        # else:
-        #     print('lazha')
-        # print('group save')
-        # response.media = dict_from_model(user, Users.temp_fields)
-        # #     (
-        # #     ('id', 'string'),
-        # #     ('name', 'string'),
-        # #     ('email', 'string'),
-        # #     ('tel', 'string'),
-        # #     ('get_last_login:last_login', 'float'),
-        # #     ('get_date_created:date_created', 'float'),
-        # #     ('token', 'string'),
-        # #     ('groups', 'objects', (
-        # #         ('name', 'string'),
-        # #         ('permissions', 'objects', (
-        # #             ('id', 'string'),
-        # #             ('get_access:access', 'string'),
-        # #         )),
-        # #     )),
-        # # ))
-        # response.status = falcon.HTTP_201
-        response.status = falcon.HTTP_200
+        group.save()
+        user.generate_token()
+        resp.media = {'user': dict_from_model(user, Users.response_templates['login']),
+                      'group': dict_from_model(group, Groups.response_templates['short']),
+                      'project': dict_from_model(project, Projects.response_templates['short'])
+                      }
+        resp.status = falcon.HTTP_200

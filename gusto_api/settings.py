@@ -11,6 +11,7 @@ ALLOWED_HOSTS = ['localhost']
 MIDDLEWARE = [
     'auth.middleware.CORSMiddleware',
     'auth.middleware.AuthMiddleware',
+    'falcon_core.middleware.JSONMiddleware',
 ]
 INSTALLED_APPS = [
     'falcon_core',
@@ -21,6 +22,8 @@ DATABASES = {}
 ROUTER_CONVERTERS = {}
 
 ROUTES = 'gusto_api.routes'
+
+WSGI_APPLICATION = 'gusto_api.wsgi.application'
 
 DEPLOY = {}
 

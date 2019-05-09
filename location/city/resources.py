@@ -10,32 +10,17 @@ class CitiesResource(Resource):
 
     use_token = True
 
-    cities_template = (
-        ('name', 'string'),
-        ('country_code', 'string'),
-        ('default', 'boolean'),
-        ('active', 'boolean'),
-        ('lat', 'integer'),
-        ('lng', 'integer'),
-        ('number_phone', 'string'),
-        ('language', 'object', (
-            ('en', 'string'),
-            ('ru', 'string'),
-            ('uk', 'string'),
-        ),),
-        ('exist_store', 'boolean'),
-    )
-
     def on_get(self, req, resp, **kwargs):
         cities = filter_queryset(Cities.objects, **req.params)
-        resp.media = dict_from_model(cities, self.cities_template, iterable=True)
+        resp.media = dict_from_model(cities, Cities.response_templates['short'], iterable=True)
         resp.status = falcon.HTTP_200
 
-    def post(self, req, resp, data, **kwargs):
+    def on_post(self, req, resp, **kwargs):
+        data = req.context['data']
         try:
             city = Cities(**data)
             city.save()
-            resp.media = dict_from_model(city, CitiesResource.cities_template)
+            resp.media = dict_from_model(city, Cities.response_templates['short'])
             resp.status = falcon.HTTP_201
         except ValidationError:
             resp.status = falcon.HTTP_400
@@ -44,9 +29,15 @@ class CitiesResource(Resource):
 class CityResource(Resource):
 
     def on_get(self, req, resp, **kwargs):
-        get_request_single(Cities, resp, **kwargs)
+        city = Cities.objects.filter(id=kwargs['id']).first()
+        if city:
+            resp.status = falcon.HTTP_OK
+            resp.media = dict_from_model(city, Cities.response_templates['short'])
+        else:
+            resp.status = falcon.HTTP_404
 
-    def put(self, req, resp, data, **kwargs):
+    def on_put(self, req, resp, **kwargs):
+        data = req.context['data']
         city = Cities.objects.filter(**kwargs).first()
         if city is None:
             resp.status = falcon.HTTP_404
