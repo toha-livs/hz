@@ -69,7 +69,7 @@ def fill_db():
     projects = []
     for i in range(projects_amount):
         counter += 1
-        name = LanguageTemplate(en='name' + str(counter), ru="имя" + str(counter))
+        name = str(counter) + '_project'
         project = Projects(name=name, domain='http://test_domain' + str(counter))
         project.save()
         projects.append(project)

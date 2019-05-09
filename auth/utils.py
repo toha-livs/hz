@@ -8,13 +8,11 @@ from json.decoder import JSONDecodeError
 from falcon_core.utils import encrypt_sha256_with_secret_key
 from falcon_core.config import settings
 
-
-
 import falcon
 import unidecode
 import requests
 
-from mongoengine import Q, ValidationError
+from mongoengine import Q
 
 from gusto_api.utils import encrypt, dict_from_model
 from gusto_api.models import Groups, Users, UsersTokens, Projects, Currencies, Countries, Cities
@@ -119,17 +117,15 @@ def generate_users_tokens_by_group(group: Groups):
     :param group: instance of the Group class inherited from MongoEngine Document class
     """
     for user in group.users:
-        # user.generate_token()
         generate_user_token(user)
 
 
-def post_create_user(req: falcon.Request, resp: falcon.Response, data) -> None:
+def post_create_user(req: falcon.Request, resp: falcon.Response, data) -> object:
     """
     Create user. Handler for HTTP POST request on users/login/ and /users/
     :param req: instance of falcon.Request class
     :param resp: instance of falcon.Response class
     """
-
 
     if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
         resp.status = falcon.HTTP_400
@@ -147,23 +143,7 @@ def post_create_user(req: falcon.Request, resp: falcon.Response, data) -> None:
     user.save()
     user.generate_token()
     # generate_user_token(user)
-    resp.media = dict_from_model(user, (
-        ('id', 'string'),
-        ('name', 'string'),
-        ('email', 'string'),
-        ('tel', 'string'),
-        ('get_last_login:last_login', 'float'),
-        ('get_date_created:date_created', 'float'),
-        ('token', 'string'),
-        ('groups', 'objects', (
-            ('name', 'string'),
-            ('permissions', 'objects', (
-                ('id', 'string'),
-                ('get_access:access', 'string'),
-            )),
-        )),
-    ))
-    resp.status = falcon.HTTP_201
+    return user
 
 
 # NEW!!!!!
@@ -321,4 +301,86 @@ def encrypt_password(user, password):
 
 def get_user_token(token):
     return UsersTokens.objects.filter(token=token).first()
+
+
+######################################### test
+
+#
+# def f_str(value):
+#     return str(value)
+#
+#
+# def f_int(value):
+#     if isinstance(value, datetime):
+#         value = datetime.timestamp(value)
+#     return int(value)
+#
+#
+# def f_float(value):
+#     if isinstance(value, datetime):
+#         value = datetime.timestamp(value)
+#     return float(value)
+#
+#
+# def f_bool(value):
+#     return bool(value)
+#
+#
+# def obj_to_dict(obj, template):
+#     resp_dict = {}
+#     for attr, rule, *t in template:
+#         rule = rules.get(rule)
+#         if t:
+#             resp_dict[attr] = rule(getattr(obj, attr), t)
+#         else:
+#             resp_dict[attr] = rule(getattr(obj, attr))
+#
+#         # if attr[:6] == 'object':
+#         #     dic = {atr[0]: pars(getattr(obj, atr[0]), atr[2], iterable=True if atr[1][-1] is 's' else False)}
+#         #     print(dic)
+#         #     resp_dict.update(dic)
+#         # else:
+#         # dic = {atr[0]: eval(rules[atr[1]])(getattr(obj, atr[0]))}
+#         # print(dic)
+#         # resp_dict.update(dic)
+#     # print(resp_dict)
+#     return resp_dict
+#
+#
+# def objs_to_dict(obj, template):
+#     return [obj_to_dict(o, template) for o in obj]
+#
+#
+# def execute_rule(obj, rule, template=None):
+#     rule = rules.get(rule)
+#     if rule:
+#         return rule(obj, *template)
+#     return None
+#
+#
+# def pars(query, template: tuple, iterable=False):
+#     # if iterable:
+#     #     return [obj_to_dict(obj, template) for obj in query]
+#     # else:
+#     #     return obj_to_dict(query.first(), template)
+#     rule = ('object', 'objects')[int(iterable)]
+#     return execute_rule(query, rule, template)
+#
+#
+# execute_rule(object, 'objects', ())
+#
+#
+# def pars_doc(query, template: tuple):
+#     pass
+#
+#
+# rules = {
+#     'string': f_str,
+#     'integer': f_int,
+#     'float': f_float,
+#     'boolean': f_bool,
+#     'object': obj_to_dict,
+#     'objects': objs_to_dict,
+# }
+
 
