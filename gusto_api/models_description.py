@@ -287,22 +287,27 @@ posts = {
     'fields': {
         'title': dict,
         'author': str,
-        'post_categories': str,
         'project': object,
+        'post_category': str,
         'tags': list,
         'url': str,
         'content': dict,
+        'last_update': int,
+
     },
     'response_templates': {
         'short': (
+            ('id', 'string'),
             ('title', 'object', (
                 ('en', 'string'),
                 ('ru', 'string'),
                 ('uk', 'string'),
             ),),
             ('author', 'string',),
-            ('post_categories', 'string',),
+            ('post_category', 'string'),
             ('tags', 'list',),
+            ('get_date_create:date_create', 'integer'),
+            ('get_last_update:last_update', 'integer'),
             ('url', 'string',),
             ('title', 'object', (
                 ('en', 'string'),

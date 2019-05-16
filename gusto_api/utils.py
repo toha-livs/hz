@@ -2,7 +2,6 @@ import os
 import hashlib
 from importlib import import_module
 
-from falcon import HTTPBadRequest
 
 from falcon_core.utils import dict_from_obj, obj_from_dict
 
