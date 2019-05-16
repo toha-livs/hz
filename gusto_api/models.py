@@ -1,7 +1,7 @@
 from mongoengine import *
 from datetime import datetime
 from .models_description import (currencies, cities, sms, users_tokens, groups,
-                                 countries, users, groups_templates, projects)
+                                 countries, users, groups_templates, projects, posts, openTime)
 from falcon_core.utils import encrypt_sha256_with_secret_key
 
 connect('tests')
@@ -266,3 +266,46 @@ class Cities(Document):
 
     def __str__(self):
         return f"<City id={self.id} country_code={self.country_code}, name={self.name}>"
+
+
+class PostCategories(Document):
+    fields = {'name': str}
+
+    unique_fields = []
+
+    response_templates = (('name', 'string',),)
+
+    name = StringField()
+
+
+class Posts(Document):
+    fields = posts['fields']
+
+    unique_fields = []
+
+    response_templates = posts['response_templates']
+
+    title = EmbeddedDocumentField(LanguageTemplate)
+    author = StringField()
+    post_category = ReferenceField(PostCategories, reverse_delete_rule=CASCADE)
+    project = ReferenceField(Projects, reverse_delete_rule=CASCADE)
+    tags = ListField(StringField())
+    url = StringField()
+    content = EmbeddedDocumentField(LanguageTemplate)
+    date_created = DateTimeField()
+    last_update = DateTimeField()
+
+
+class OpenTime(Document):
+    fields = openTime['fields']
+
+    unique_fields = []
+
+    response_templates = openTime['response_templates']
+
+    day = IntField()
+    project = ReferenceField(Projects, reverse_delete_rule=CASCADE)
+    open_hours = IntField()
+    open_minutes = IntField()
+    close_minutes = IntField()
+    close_hours = IntField()

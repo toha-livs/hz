@@ -4,9 +4,10 @@ import falcon
 
 from falcon_core.resources import Resource, JSONResource
 
-from gusto_api.models import Users, Projects, Groups, Permissions
+from gusto_api.models import Users, Projects, Groups, Permissions, OpenTime
 from gusto_api.utils import encrypt, filter_queryset, dict_from_model, model_from_dict
 from auth.utils import delete_request, post_create_user, encrypt_password, validate_obj
+from restaurant.resources import WorkingTimeResource
 
 
 class UsersResource(Resource):
@@ -119,7 +120,6 @@ class RegistrationResource(Resource):
     use_token = False
 
     def on_post(self, req, resp, **kwargs):
-        # print(data)
         data = req.context['data']
         [data['user'].pop(key, None) for key in set(Users.fields.keys() ^ data['user'].keys())]
         [data['project'].pop(key, None) for key in set(Projects.fields.keys() ^ data['project'].keys())]
@@ -141,6 +141,12 @@ class RegistrationResource(Resource):
                 return
         user.save()
         project.save()
+        work_times = []
+        for w_time in data['working_time']:
+            w_t = OpenTime(**w_time)
+            w_t.project = project.id
+            w_t.save()
+            work_times.append(w_t)
         group = Groups(users=[str(user.id)], project=str(project.id), name=project.name,
                        permissions=[str(perm.id) for perm in Permissions.objects.all()], g_type='restaurant')
         error = validate_obj(group)

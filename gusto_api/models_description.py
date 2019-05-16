@@ -283,6 +283,56 @@ cities = {
     }
 }
 
+posts = {
+    'fields': {
+        'title': dict,
+        'author': str,
+        'post_categories': str,
+        'project': object,
+        'tags': list,
+        'url': str,
+        'content': dict,
+    },
+    'response_templates': {
+        'short': (
+            ('title', 'object', (
+                ('en', 'string'),
+                ('ru', 'string'),
+                ('uk', 'string'),
+            ),),
+            ('author', 'string',),
+            ('post_categories', 'string',),
+            ('tags', 'list',),
+            ('url', 'string',),
+            ('title', 'object', (
+                ('en', 'string'),
+                ('ru', 'string'),
+                ('uk', 'string'),
+            ),),),
+    },
+
+}
+
+openTime = {
+    'fields': {
+        'day': int,
+        'open_hours': int,
+        'open_minutes': int,
+        'close_hours': int,
+        'close_minutes': int,
+        'project': object,
+    },
+    'response_templates': {
+        'short': (
+            ('day', 'integer'),
+            ('open_hours', 'integer'),
+            ('open_minutes', 'integer'),
+            ('close_hours', 'integer'),
+            ('close_minutes', 'integer'),
+        ),
+    }
+}
+
 sms = {
     'fields': {
         'tel': str,
