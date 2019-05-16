@@ -10,7 +10,7 @@ class GroupsResource(Resource):
     def on_get(self, req, resp, **kwargs):
         groups = filter_queryset(Groups.objects, **req.params)
         resp.status = falcon.HTTP_OK
-        resp.media = dict_from_model(groups, Groups.response_templates['short'], iterable=True)
+        resp.media = dict_from_model(groups, Groups.response_templates['long'], iterable=True)
 
     def on_post(self, req, resp, **kwargs):
         """

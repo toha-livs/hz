@@ -16,30 +16,19 @@ class ProjectResource(Resource):
         get project by group id
         url: projects/{group_id}/
         """
+        print(kwargs)
         if kwargs.get('group_id'):
             group_id = kwargs.pop('group_id', None)
             kwargs['id'] = Groups.objects.filter(id=group_id).first().project.id
+            print(kwargs['id'], 'groups')
         if not kwargs.get('id', False):
             resp.status = falcon.HTTP_404
             return
         resp.status = falcon.HTTP_OK
-        resp.media = dict_from_model(Projects.objects.filter(id=kwargs.get('id')).first(), (
-            ('id', 'string'),
-            ('domain', 'string'),
-            ('additional_domains', 'list'),
-            ('address', 'objects', (
-                ('en', 'string'),
-                ('ru', 'string'),
-                ('uk', 'string'),
-            )),
-            ('logo', 'string'),
-            ('favicon', 'string'),
-            ('name', 'object', (
-                ('en', 'string'),
-                ('ru', 'string'),
-                ('uk', 'string'),
-            )),
-        ))
+        print(kwargs.get('id'))
+        project = Projects.objects.filter(id=kwargs.get('id')).first()
+        print(project)
+        resp.media = dict_from_model(project, Projects.response_templates['short'])
 
     def on_post(self, req, resp, **kwargs):
         """
@@ -59,23 +48,7 @@ class ProjectResource(Resource):
             resp.body = 'Error on commit.'
             resp.status = falcon.HTTP_400
             return
-        resp.media = dict_from_model(new_project, (
-            ('id', 'string'),
-            ('domain', 'string'),
-            ('additional_domains', 'list'),
-            ('address', 'objects', (
-                ('en', 'string'),
-                ('ru', 'string'),
-                ('uk', 'string'),
-            )),
-            ('logo', 'string'),
-            ('favicon', 'string'),
-            ('name', 'object', (
-                ('en', 'string'),
-                ('ru', 'string'),
-                ('uk', 'string'),
-            )),
-        ))
+        resp.media = dict_from_model(new_project, Projects.response_templates['short'])
         resp.status = falcon.HTTP_201
 
     def on_put(self, req, resp, **kwargs):

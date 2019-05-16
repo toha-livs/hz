@@ -136,16 +136,18 @@ class RegistrationResource(Resource):
             error = validate_obj(instance)
             if error:
                 resp.status = falcon.HTTP_400
+                print(error, 1)
                 resp.body = error
                 return
         user.save()
         project.save()
-        group = Groups(users=[str(user.id)], project=str(project.id), name=project.name + '_Group',
+        group = Groups(users=[str(user.id)], project=str(project.id), name=project.name,
                        permissions=[str(perm.id) for perm in Permissions.objects.all()], g_type='restaurant')
         error = validate_obj(group)
         if error:
             user.delete()
             project.delete()
+            print(error, 3)
             resp.status = falcon.HTTP_400
             resp.body = error
             return
