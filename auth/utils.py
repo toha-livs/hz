@@ -15,9 +15,9 @@ import requests
 from mongoengine import Q, ValidationError
 
 from gusto_api.utils import encrypt, dict_from_model
-from gusto_api.models import Groups, Users, UsersTokens, Projects, Currencies, Countries, Cities
+from gusto_api.models import Group, User, UserToken, Project #Currencies, Countries, Cities
 
-MODELS_UNION = Union[Type[Users], Type[Groups], Type[Projects], Type[Currencies], Type[Countries], Type[Cities]]
+MODELS_UNION = Union[Type[User], Type[Group], Type[Project]] #Type[Currencies], Type[Countries], Type[Cities]]
 
 
 def get_request_multiple(model: MODELS_UNION, params: dict, resp: falcon.Response) -> None:
@@ -80,23 +80,23 @@ def get_request_single(model: MODELS_UNION, resp: falcon.Response, **kwargs) -> 
     resp.status = falcon.HTTP_200
 
 
-def token_exists(instance: UsersTokens) -> bool:
+def token_exists(instance: UserToken) -> bool:
     """
     Checks if given token exists in the database
-    :param instance: UsersToken object
+    :param instance: UserToken object
     :return: True or False
     """
-    instance.token = UsersTokens.objects(token=instance.token).first()
+    instance.token = UserToken.objects(token=instance.token).first()
 
     return bool(instance.token)
 
 
-def generate_user_token(user: Users) -> None:
+def generate_user_token(user: User) -> None:
     """
     Generates user token by this formula:
         email + tel + password + list(permissions_ids) + secret_key
     and encrypt it with sha256
-    :param user: instance of the Users class inharited from MongoEngine Document class
+    :param user: instance of the User class inharited from MongoEngine Document class
     """
     user_permissions = user.groups_values('permissions').all()
     permissions_ids = [x.id for y in user_permissions for x in y]
@@ -105,13 +105,13 @@ def generate_user_token(user: Users) -> None:
 
     user_token = user.get_token
     if user_token is None:
-        user_token = UsersTokens(user=user, token=encrypt(text))
+        user_token = UserToken(user=user, token=encrypt(text))
         user_token.save()
     else:
         user_token.update(token=encrypt(text))
 
 
-def generate_users_tokens_by_group(group: Groups):
+def generate_users_tokens_by_group(group: Group):
     """
     Iterate through users subscribed to given group and generate for them token
     :param group: instance of the Group class inherited from MongoEngine Document class
@@ -127,14 +127,14 @@ def post_create_user(req: falcon.Request, resp: falcon.Response, data) -> object
     :param resp: instance of falcon.Response class
     """
 
-    if Users.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
+    if User.objects.filter((Q(email=data['email']) or (Q(tel=data['tel'])))):
         resp.status = falcon.HTTP_400
         resp.body = 'user is already present'
         return
 
     images = data.pop('images', None)
 
-    user = Users(**data)
+    user = User(**data)
     user.password = encrypt(user.email + user.tel + user.password)
 
     user.date_created = datetime.now()
@@ -155,7 +155,7 @@ def post_create_user(req: falcon.Request, resp: falcon.Response, data) -> object
 #     """
 #     data = cgi.FieldStorage(fp=req.stream, environ=req.env)
 #
-#     if Users.objects.filter((Q(email=data['email'].value) or (Q(tel=data['tel'].value)))):
+#     if User.objects.filter((Q(email=data['email'].value) or (Q(tel=data['tel'].value)))):
 #         resp.status = falcon.HTTP_400
 #         resp.body = 'user is already present'
 #         return
@@ -163,7 +163,7 @@ def post_create_user(req: falcon.Request, resp: falcon.Response, data) -> object
 #     data_keys = data.keys()
 #     data_keys.remove('images')
 #     new_d = {x: data[x].value for x in data_keys}
-#     user = Users(**new_d)
+#     user = User(**new_d)
 #
 #     user.password = encrypt(user.email + user.tel + user.password)
 #
@@ -300,7 +300,7 @@ def encrypt_password(user, password):
 
 
 def get_user_token(token):
-    return UsersTokens.objects.filter(token=token).first()
+    return UserToken.objects.filter(token=token).first()
 
 
 ######################################### test

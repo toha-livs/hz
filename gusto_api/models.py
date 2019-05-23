@@ -1,10 +1,10 @@
 from mongoengine import *
 from datetime import datetime
 from .models_description import (currencies, cities, sms, users_tokens, groups,
-                                 countries, users, groups_templates, projects, posts, openTime)
+                                 countries, users, groups_templates, projects, posts, openTime, permissions)
 from falcon_core.utils import encrypt_sha256_with_secret_key
 
-connect('tests')
+connect('gusto')
 
 
 class LanguageTemplate(EmbeddedDocument):
@@ -44,90 +44,43 @@ class ImageTemplate(FileTemplate):
         return f"<ImageTemplate thumbnail={self.thumbnail}, small={self.small}, large={self.large}>"
 
 
-class Projects(Document):
-    fields = projects['fields']
+class Permission(Document):
+    ACCESSES = ('read', 'write')
 
-    unique_fields = projects['unique_fields']
-
-    response_templates = projects['response_templates']
-
-    name = StringField(required=True)
-    domain = StringField(unique=True, required=True)
-    additional_domains = ListField(StringField())
-    address = EmbeddedDocumentListField(LanguageTemplate)
-    logo = EmbeddedDocumentField(ImageTemplate)
-    favicon = EmbeddedDocumentField(ImageTemplate)
-
-    @property
-    def groups(self):
-        return Groups.objects.filter(project=self)
-
-    def __str__(self):
-        return f"<Projects id={self.id}, domain={self.domain}, tel={self.address}, additional_domains={self.additional_domains}>"
-
-
-class Permissions(Document):
-    ACCESSES = ('r', 'w')
+    fields = {'name': str,
+              'access': int,
+              'description': str
+              }
 
     unique_fields = []
 
+    response_template = permissions['response_template']
+
     name = StringField()
     access = IntField()
-
-    fields = {'name': str,
-              'access': int}
+    description = StringField()
 
     @property
     def get_access(self):
         return f"{self.name}_{self.ACCESSES[self.access]}"
 
     def __str__(self):
-        return f"<Permissions id={self.id}, name={self.name}, access={self.access}>"
+        return f"<Permission id={self.id}, name={self.name}, access={self.access}>"
 
 
-class GroupsTemplates(Document):
-    fields = groups_templates['fields']
-
-    name = StringField()
-    permissions = ListField(ReferenceField(Permissions, reverse_delete_rule=PULL))
-    g_type = StringField()
-
-    def __str__(self):
-        return f"<GroupTemplates id={self.id}, name={self.name}, permissions={self.permissions}>"
-
-
-class Users(Document):
+class User(Document):
     fields = users['fields']
 
-    temp_fields = users['temp_fields']
-
-    response_templates = users['response_templates']
-
-    filters = users['filters']
-
-    unique_fields = users['unique_fields']
-
-    name = StringField(required=True)
+    unique_fields = []
+    name = StringField()
     surname = StringField()
     email = EmailField(required=True, unique=True)
     password = StringField(required=True)
     last_login = DateTimeField()
-    date_created = DateTimeField()
     is_active = BooleanField(default=True)
+    date_created = DateTimeField()
     image = StringField()
     tel = StringField(max_length=24, unique=True, required=True)
-
-    #
-    # def update(self, **kwargs):
-    #     try:
-    #         super(self).update(**kwargs)
-    #         self.password =
-    #     except:
-    #         pass
-    #
-    @property
-    def groups(self):
-        return Groups.objects.filter(users__in=[self.id])
 
     @property
     def get_last_login(self):
@@ -142,31 +95,63 @@ class Users(Document):
         return datetime.timestamp(self.date_created)
 
     def generate_token(self):
-        groups = Groups.objects.filter(users__in=[self.id])
+        groups = Group.objects.filter(users__contains=str(self.id))
         permissions = []
+        # print(groups.values_list('permissions'))
         for perms in groups.values_list('permissions'):
             permissions.extend(perms)
+
+        # print(permissions)
         permissions = '__'.join([f'{perm.id}_{perm.get_access}' for perm in permissions])
+        # print(permissions)
+
         token = encrypt_sha256_with_secret_key(str(self.id) + self.email + self.tel + self.password + permissions)
-        user_token = UsersTokens.objects.filter(user=self).first()
+        user_token = UserToken.objects.filter(user=self).first()
         if user_token:
             user_token.token = token
             user_token.save()
         else:
-            UsersTokens(user=self, token=token).save()
+            UserToken(user=self, token=token).save()
+
+    def __str__(self):
+        return f"<User id={self.id}, tel={self.tel}, name={self.email}, password={self.password}>"
+
+
+class SuperUser(Document):
+    root = ReferenceField(User)
+
+
+class Staff(Document):
+    owner = ReferenceField(User)
+    staff_list = ListField(ReferenceField(User, reverse_delete_rule=PULL))
+
+
+class Project(Document):
+    fields = projects['fields']
+
+    unique_fields = projects['unique_fields']
+
+    response_templates = projects['response_templates']
+
+    name = StringField(required=True)
+    domain = StringField(unique=True, required=True)
+    additional_domains = ListField(StringField())
+    address = EmbeddedDocumentListField(LanguageTemplate)
+    is_active = BooleanField(default=True)
+    logo = EmbeddedDocumentField(ImageTemplate)
+    favicon = EmbeddedDocumentField(ImageTemplate)
+    owner = ReferenceField(User, reverse_delete_rule=CASCADE, required=True)
+    p_type = StringField()
 
     @property
-    def token(self):
-        user_token = UsersTokens.objects.filter(user=self).first()
-        if user_token:
-            return user_token.token
-        return None
+    def groups(self):
+        return Group.objects.filter(project=self)
 
-    def __repr__(self):
-        return f'<{type(self).__name__} id={self.id}>'
+    def __str__(self):
+        return f"<Project id={self.id}, domain={self.domain}, tel={self.address}, additional_domains={self.additional_domains}>"
 
 
-class Groups(Document):
+class Group(Document):
     fields = groups['fields']
 
     temp_fields = groups['temp_fields']
@@ -177,21 +162,32 @@ class Groups(Document):
 
     unique_fields = []
 
-    users = ListField(ReferenceField(Users, reverse_delete_rule=PULL))
-    project = ReferenceField(Projects, reverse_delete_rule=NULLIFY, required=True)
+    users = ListField(ReferenceField(User, reverse_delete_rule=PULL))
+    project = ReferenceField(Project, reverse_delete_rule=CASCADE, required=True)
     name = StringField(required=True)
-    permissions = ListField(ReferenceField(Permissions, reverse_delete_rule=PULL))
+    permissions = ListField(ReferenceField(Permission, reverse_delete_rule=PULL))
     g_type = StringField()  # add required soon...
-    is_owner = BooleanField(default=False)
+    descriptions = StringField()
 
     def __str__(self):
         return f"<Group id={self.id}, name={self.name},  users={self.users}, project={self.project.name}>"
 
 
-class UsersTokens(Document):
+class GroupTemplate(Document):
+    fields = groups_templates['fields']
+
+    name = StringField()
+    permissions = ListField(ReferenceField(Permission, reverse_delete_rule=PULL))
+    g_type = StringField()
+
+    def __str__(self):
+        return f"<GroupTemplates id={self.id}, name={self.name}, permissions={self.permissions}>"
+
+
+class UserToken(Document):
     fields = users_tokens['fields']
 
-    user = ReferenceField(Users, reverse_delete_rule=CASCADE)
+    user = ReferenceField(User, reverse_delete_rule=CASCADE)
     token = StringField()
 
     def __str__(self):
@@ -207,93 +203,95 @@ class SMS(Document):
     expire = DecimalField()
 
 
-class Currencies(Document):
-    fields = currencies['fields']
+#
+#
+# class Currencies(Document):
+#     fields = currencies['fields']
+#
+#     unique_fields = currencies['unique_fields']
+#
+#     response_template = currencies['response_template']
+#
+#     name = StringField(required=True)
+#     symbol = StringField(required=True)
+#     code = StringField(unique=True, required=True)
+#     rate = IntField()
+#     rates = ListField()
+#     last_update = DateTimeField()
+#
+#     @property
+#     def get_last_update(self):
+#         return datetime.timestamp(self.last_update)
+#
+#     def __str__(self):
+#         return f"<Currencies id={self.id}, name={self.name}, symbol={self.symbol}, code={self.code}>"
+#
 
-    unique_fields = currencies['unique_fields']
+# class Countries(Document):
+#     fields = countries['fields']
+#
+#     response_template = countries['response_template']
+#
+#     unique_fields = countries['unique_fields']
+#
+#     name = StringField(required=True)
+#     iso2 = StringField(unique=True, required=True)
+#     dial_code = StringField()
+#     priority = IntField(required=True)
+#     area_codes = ListField()
+#     currency = ReferenceField(Currencies, reverse_delete_rule=NULLIFY)
+#
+#     def __str__(self):
+#         return f"<Currencies id={self.id}, name={self.name}, iso2={self.iso2}, currency={self.currency}>"
 
-    response_template = currencies['response_template']
+#
+# class Cities(Document):
+#     fields = cities['fields']
+#
+#     response_templates = cities['response_templates']
+#
+#     unique_fields = []
+#
+#     active = BooleanField(default=True)
+#     country_code = StringField(required=True)
+#     default = BooleanField(default=False)
+#     name = StringField(required=True)
+#     lat = IntField()
+#     lng = IntField()
+#     language = EmbeddedDocumentField(LanguageTemplate, required=True)
+#     number_phone = StringField()
+#     exist_store = BooleanField(default=False)
+#
+#     def __str__(self):
+#         return f"<City id={self.id} country_code={self.country_code}, name={self.name}>"
 
-    name = StringField(required=True)
-    symbol = StringField(required=True)
-    code = StringField(unique=True, required=True)
-    rate = IntField()
-    rates = ListField()
-    last_update = DateTimeField()
-
-    @property
-    def get_last_update(self):
-        return datetime.timestamp(self.last_update)
-
-    def __str__(self):
-        return f"<Currencies id={self.id}, name={self.name}, symbol={self.symbol}, code={self.code}>"
-
-
-class Countries(Document):
-    fields = countries['fields']
-
-    response_template = countries['response_template']
-
-    unique_fields = countries['unique_fields']
-
-    name = StringField(required=True)
-    iso2 = StringField(unique=True, required=True)
-    dial_code = StringField()
-    priority = IntField(required=True)
-    area_codes = ListField()
-    currency = ReferenceField(Currencies, reverse_delete_rule=NULLIFY)
-
-    def __str__(self):
-        return f"<Currencies id={self.id}, name={self.name}, iso2={self.iso2}, currency={self.currency}>"
-
-
-class Cities(Document):
-    fields = cities['fields']
-
-    response_templates = cities['response_templates']
-
-    unique_fields = []
-
-    active = BooleanField(default=True)
-    country_code = StringField(required=True)
-    default = BooleanField(default=False)
-    name = StringField(required=True)
-    lat = IntField()
-    lng = IntField()
-    language = EmbeddedDocumentField(LanguageTemplate, required=True)
-    number_phone = StringField()
-    exist_store = BooleanField(default=False)
-
-    def __str__(self):
-        return f"<City id={self.id} country_code={self.country_code}, name={self.name}>"
+#
+# class PostCategories(Document):
+#     fields = {'name': str}
+#
+#     unique_fields = []
+#
+#     response_templates = (('name', 'string',),)
+#
+#     name = StringField()
 
 
-class PostCategories(Document):
-    fields = {'name': str}
-
-    unique_fields = []
-
-    response_templates = (('name', 'string',),)
-
-    name = StringField()
-
-
-class Posts(Document):
-    fields = posts['fields']
-
-    unique_fields = []
-
-    response_templates = posts['response_templates']
-
-    title = EmbeddedDocumentField(LanguageTemplate)
-    author = StringField()
-    post_category = ReferenceField(PostCategories, reverse_delete_rule=CASCADE)
-    project = ReferenceField(Projects, reverse_delete_rule=CASCADE)
-    tags = ListField(StringField())
-    url = StringField()
-    content = EmbeddedDocumentField(LanguageTemplate)
-    date_created = DateTimeField()
-    last_update = DateTimeField()
+# class Posts(Document):
+#     fields = posts['fields']
+#
+#     unique_fields = []
+#
+#     response_templates = posts['response_templates']
+#
+#     title = EmbeddedDocumentField(LanguageTemplate)
+#     author = StringField()
+#     post_category = ReferenceField(PostCategories, reverse_delete_rule=CASCADE)
+#     project = ReferenceField(Project, reverse_delete_rule=CASCADE)
+#     tags = ListField(StringField())
+#     url = StringField()
+#     content = EmbeddedDocumentField(LanguageTemplate)
+#     date_created = DateTimeField()
+#     last_update = DateTimeField()
 
 
 class OpenTime(Document):
@@ -304,7 +302,7 @@ class OpenTime(Document):
     response_templates = openTime['response_templates']
 
     day = IntField()
-    project = ReferenceField(Projects, reverse_delete_rule=CASCADE)
+    project = ReferenceField(Project, reverse_delete_rule=CASCADE)
     open_hours = IntField()
     open_minutes = IntField()
     close_minutes = IntField()

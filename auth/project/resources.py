@@ -3,7 +3,7 @@ import json
 import falcon
 from falcon_core.resources import Resource
 
-from gusto_api.models import Projects, Groups
+from gusto_api.models import Project, Group
 from auth.utils import delete_request
 from gusto_api.utils import dict_from_model
 
@@ -19,16 +19,16 @@ class ProjectResource(Resource):
         print(kwargs)
         if kwargs.get('group_id'):
             group_id = kwargs.pop('group_id', None)
-            kwargs['id'] = Groups.objects.filter(id=group_id).first().project.id
+            kwargs['id'] = Group.objects.filter(id=group_id).first().project.id
             print(kwargs['id'], 'groups')
         if not kwargs.get('id', False):
             resp.status = falcon.HTTP_404
             return
         resp.status = falcon.HTTP_OK
         print(kwargs.get('id'))
-        project = Projects.objects.filter(id=kwargs.get('id')).first()
+        project = Project.objects.filter(id=kwargs.get('id')).first()
         print(project)
-        resp.media = dict_from_model(project, Projects.response_templates['short'])
+        resp.media = dict_from_model(project, Project.response_templates['short'])
 
     def on_post(self, req, resp, **kwargs):
         """
@@ -41,14 +41,14 @@ class ProjectResource(Resource):
             return
 
         try:
-            new_project = Projects(**data)
+            new_project = Project(**data)
             new_project.save()
         except Exception as e:
             print(e)
             resp.body = 'Error on commit.'
             resp.status = falcon.HTTP_400
             return
-        resp.media = dict_from_model(new_project, Projects.response_templates['short'])
+        resp.media = dict_from_model(new_project, Project.response_templates['short'])
         resp.status = falcon.HTTP_201
 
     def on_put(self, req, resp, **kwargs):
@@ -62,7 +62,7 @@ class ProjectResource(Resource):
                 resp.status = falcon.HTTP_400
                 return
 
-            project = Projects.objects.filter(**kwargs).first()
+            project = Project.objects.filter(**kwargs).first()
 
             if project is None:
                 resp.status = falcon.HTTP_400
@@ -82,4 +82,4 @@ class ProjectResource(Resource):
         DELETE project by id
         url: projects/{id}/
         """
-        delete_request(Projects, resp, **kwargs)
+        delete_request(Project, resp, **kwargs)

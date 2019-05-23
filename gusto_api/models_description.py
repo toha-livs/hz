@@ -193,6 +193,14 @@ projects = {
             )
     }
 }
+permissions = {
+    'response_template': {
+        'short': (
+            ('id', 'string'),
+            ('get_access:access', 'string'),
+            ('description', 'string'),)
+    }
+}
 
 currencies = {
     'fields': {
